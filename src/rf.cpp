@@ -1,103 +1,139 @@
 #include <Arduino.h>
 #include "rf.h"
-#include <RF24.h>
-#include <RF24Network.h>
-#include <RF24Mesh.h>
-#include <ArduinoLog.h>
 
+#define DEBUG
 
-// Configure nrf24l01 CE and CS pins
-RF24 radio(7, 8);
-RF24Network network(radio);
-RF24Mesh mesh(radio, network);
+namespace communication {
 
-uint32_t displayTimer = 0;
-static uint8_t node_id = 2;
+const rf24_gpio_pin_t rf::PIN_CE = 7;
+const rf24_gpio_pin_t rf::PIN_CSN = 8;
+const uint8_t rf::DEFAULT_NODE_ID = 2;
 
-uint8_t rf_get_node_id()
+rf::rf() :
+  mRadio(PIN_CE, PIN_CSN),
+  mNetwork(mRadio),
+  mMesh(mRadio, mNetwork),
+  mNodeIdIsSet(false)
 {
-  return node_id;
 }
 
-void rf_increment_node_id()
-{
-  node_id = (node_id % MAX_NODE_ID) + 1;
-}
-
-void rf_task()
-{
-  mesh.update();
-
-  // Send to the master node every second
-  if (millis() - displayTimer >= 1000)
-  {
-    displayTimer = millis();
-
-    // Send an 'M' type message containing the current millis()
-    if (!mesh.write(&displayTimer, 'M', sizeof(displayTimer)))
-    {
-
-      // If a write fails, check connectivity to the mesh network
-      if (!mesh.checkConnection())
-      {
-        // refresh the network address
-        Log.noticeln("Renewing Address");
-        if (mesh.renewAddress() == MESH_DEFAULT_ADDRESS)
-        {
-          // If address renewal fails, reconfigure the radio and restart the mesh
-          // This allows recovery from most if not all radio errors
-          mesh.begin();
-        }
-      }
-      else
-      {
-        Log.noticeln("Send fail, Test OK");
-      }
-    }
-    else
-    {
-      Log.noticeln(F("Send OK: %lu"),displayTimer);
-    }
+void rf::setup() {
+  Serial.begin(115200);
+  while (!Serial) {
+    // some boards need this because of native USB capability
   }
 
-  while (network.available())
-  {
-    RF24NetworkHeader header;
-    payload_t payload;
-    network.read(header, &payload, sizeof(payload));
-    Log.notice("Received packet #%i", payload.counter);
-    Log.noticeln(F(" at %i"),payload.ms);
+  if (false == mNodeIdIsSet) {
+    mMesh.setNodeID(DEFAULT_NODE_ID);
   }
-}
 
-void rf_setup()
-{
-  // Set the nodeID manually
-  mesh.setNodeID(node_id);
-
-  // Set the PA Level to MIN and disable LNA for testing & power supply related issues
-  radio.begin();
-  radio.setPALevel(RF24_PA_MIN, 0);
+#ifdef DEBUG
+  Serial.printf("[%s] Node ID [%d]\r\n", __func__, mMesh.getNodeID());
+#endif
 
   // Connect to the mesh
-  Log.noticeln(F("Connecting to the mesh..."));
-  if (!mesh.begin())
-  {
-    if (radio.isChipConnected())
-    {
-      do
-      {
+  if (!mMesh.begin()) {
+    if (0 != mMesh.getNodeID() && mRadio.isChipConnected()) {
+      do {
         // mesh.renewAddress() will return MESH_DEFAULT_ADDRESS on failure to connect
-        Log.noticeln(F("Could not connect to network.\nConnecting to the mesh..."));
-      } while (mesh.renewAddress() == MESH_DEFAULT_ADDRESS);
+        Serial.printf("Could not connect to network.\r\nConnecting to the mesh...\r\n");
+      } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
     }
-    else
-    {
-      Log.noticeln(F("Radio hardware not responding."));
-      while (1)
-      {
+    else {
+      Serial.printf("Radio hardware not responding.\r\n");
+      while (1) {
         // hold in an infinite loop
+        // TODO: manage this case using screen to show user message
       }
     }
+
   }
+#ifdef DEBUG
+  Serial.printf("[%s] Communication stack READY\r\n", __func__);
+#endif
+}
+
+void rf::receive() {
+
+  // Call mesh.update to keep the network updated
+  mMesh.update();
+  if (0 == mMesh.getNodeID()) {
+    mMesh.DHCP();
+  }
+
+  // Check for incoming data from the sensors
+  if (mNetwork.available()) {
+    RF24NetworkHeader header;
+    mNetwork.peek(header);
+#ifdef DEBUG
+    Serial.printf("[%s] Node ID [%d] ", __func__, header.from_node - 1);
+#endif
+
+    uint32_t data(0);
+    switch (header.type) {
+    case 'M':
+      mNetwork.read(header, &data, sizeof(data));
+#ifdef DEBUG
+      Serial.printf("Data = [%lu]\r\n", data);
+#endif
+      break;
+    default:
+      mNetwork.read(header, 0, 0);
+#ifdef DEBUG
+      Serial.printf("\r\n[%s] Received unmanaged data type [%d]\r\n", __func__, header.type);
+#endif
+      break;
+    }
+  }
+}
+
+bool rf::send(uint16_t destNode, uint32_t data) {
+  bool isSuccess(false);
+
+  // Call mesh.update to keep the network updated
+  mMesh.update();
+
+  if (!mMesh.write(&data, 'M', sizeof(data))) {
+    // If a write fails, check connectivity to the mesh network
+    if (!mMesh.checkConnection()) {
+      // The address could be refreshed per a specified timeframe or only when sequential writes fail, etc.
+      do {
+        Serial.printf("[%s] Renewing Address...\r\n", __func__);
+      } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
+    }
+#ifdef DEBUG
+    else {
+      Serial.printf("[%s] Send fail, Test OK\r\n", __func__);
+    }
+#endif
+  }
+  else {
+#ifdef DEBUG
+    Serial.printf("[%s] Send OK - [%d] Data = [%lu]\r\n", __func__, mMesh.getNodeID(), data);
+#endif
+    isSuccess = true;
+  }
+
+  return isSuccess;
+}
+
+uint16_t rf::getNodeId() {
+  return mMesh.getNodeID();
+}
+
+void rf::incrementNode_id() {
+  mNodeIdIsSet = true;
+  uint16_t nodeId = mMesh.getNodeID();
+  nodeId = (nodeId % MAX_NODE_ID) + 1;
+
+  // Node ID 0 and 1 are reserved for Master
+  if (0 == nodeId) {
+    nodeId = 2;
+  }
+  if (1 == nodeId) {
+    nodeId = 2;
+  }
+
+  mMesh.setNodeID(nodeId);
+}
 }

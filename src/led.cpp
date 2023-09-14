@@ -61,7 +61,7 @@ void effect_music()
   mic_count++;
 
   // Define custom hue values for your desired color order
-  uint16_t colorHues[] = {0, 240, 120, 60, 30, 300, 0};
+  uint16_t colorHues[] = { 0, 240, 120, 60, 30, 300, 0 };
 
   // Check if we've collected SAMPLES samples
   if (mic_count >= SAMPLES)
@@ -81,7 +81,7 @@ void effect_music()
     }
     // Get the corresponding hue from the custom array
     byte hue = colorHues[hueIndex];
-    
+
     // Set all LEDs to the calculated color
     for (int i = 0; i < NUM_LEDS; i++)
     {
