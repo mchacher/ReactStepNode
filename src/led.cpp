@@ -7,7 +7,7 @@
 #define NUM_LEDS 1
 
 // Data Pin for WS2812
-#define DATA_PIN D4
+#define DATA_PIN 4
 
 // This is an array of leds.  One item for each led in your strip.
 CRGB leds[NUM_LEDS];
