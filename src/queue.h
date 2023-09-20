@@ -63,6 +63,11 @@ bool Queue<T, MAX_QUEUE_SIZE>::pop(T &item) {
         return false; // Queue is empty
     } else {
         item = queue[front++];
+        if (front > rear) {
+            // Reset front and rear when the queue becomes empty after popping
+            front = 0;
+            rear = -1;
+        }
         return true;
     }
 }
@@ -76,5 +81,6 @@ bool Queue<T, MAX_QUEUE_SIZE>::frontItem(T &item) {
         return true;
     }
 }
+
 
 #endif  // QUEUE_H

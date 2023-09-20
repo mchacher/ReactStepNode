@@ -5,7 +5,7 @@
 #include "queue.h" // Include the original Queue class
 
 // Define the maximum size for the event queue
-#define MAX_EVENT_QUEUE_SIZE 10
+#define MAX_EVENT_QUEUE_SIZE 20
 
 
 // Create a new class EventQueue that inherits from the Queue class
