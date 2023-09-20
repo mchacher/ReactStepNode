@@ -12,7 +12,7 @@ enum RT_State
     RT_STOP = 2
 };
 
-void setupRuntime();
-void taskCallbackRuntime();
+void runtime_setup();
+void runtime_task();
 
 #endif

@@ -14,12 +14,12 @@ CRGB leds[NUM_LEDS];
 
 uint32_t current_color = 0xFFFFFF; // black
 
-void setColor(uint32_t color)
+void led_set_color(uint32_t color)
 {
   current_color = color;
 }
 
-void taskCallbackLED()
+void led_task()
 {
   //static CRGB color = CRGB::Blue;
 
@@ -37,7 +37,7 @@ void taskCallbackLED()
 
 
 
-void setupLED()
+void led_setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
   FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);

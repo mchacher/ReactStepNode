@@ -9,9 +9,9 @@
 #include "runtime.h"
 
 // Tasks
-Task taskLED(50, TASK_FOREVER, &taskCallbackLED);
+Task taskLED(50, TASK_FOREVER, &led_task);
 // Task taskRF(10, TASK_FOREVER, &taskCallbackRF);
-Task taskRuntime(RUNTIME_CYCLE, TASK_FOREVER, &taskCallbackRuntime);
+Task taskRuntime(RUNTIME_CYCLE, TASK_FOREVER, &runtime_task);
 
 Scheduler runner;
 
@@ -24,12 +24,12 @@ void setup()
   }
   Log.begin(LOG_LEVEL_VERBOSE, &Serial);
   Log.notice(F("Starting React Step Node with ID: %d" CR), NODE_ID);
-  setupLED();
   // setupRF();
-  setupRuntime();
+  runtime_setup();
   // initialize scheduler
   Log.notice(F("Initialized scheduler" CR));
   runner.init();
+  led_setup();
   runner.addTask(taskLED);
   taskLED.enable();
   Log.notice(F("--- taskLED: added and enabled" CR));

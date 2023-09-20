@@ -9,7 +9,7 @@
 #define END                0x81
 #define WAIT_EVENT         0x82
 #define TIMER              0x83
-#define SEND               0x84
+#define SEND_EVENT         0x84
 #define LED_COLOR          0xA0
 #define LED_TRAFFIC_LIGHT  0xA1
 #define FOOT_PRESS_COLOR   0xB0
@@ -43,39 +43,39 @@ uint16_t timer = 0;
 RT_State state = RT_STOP;
 
 
-void handleStart() {
+void handle_start() {
     // Add your custom code for the START command here
 }
 
-void handleEnd() {
+void handle_end() {
     // Add your custom code for the END command here
 }
 
-void handleWaitEvent(uint32_t eventCode) {
+void handle_wait_event(uint32_t eventCode) {
     // Add your custom code for the WAIT_EVENT command here
 }
 
-void handleTimer(uint16_t duration) {
+void handle_timer(uint16_t duration) {
     // Add your custom code for the TIMER command here
 }
 
-void handleSend() {
+void handle_send_event() {
     // Add your custom code for the SEND command here
 }
 
-void handleLedColor(uint32_t colorCode) {
+void handle_led_color(uint32_t colorCode) {
     // Add your custom code for the LED_COLOR command here
 }
 
-void handleLedTrafficLight() {
+void handle_led_traffic_light() {
     // Add your custom code for the LED_TRAFFIC_LIGHT command here
 }
 
-void handleFootPressColor(uint32_t color1, uint32_t color2) {
+void handle_foot_press_color(uint32_t color1, uint32_t color2) {
     // Add your custom code for the FOOT_PRESS_COLOR command here
 }
 
-void handleFootPressBip() {
+void handle_foot_press_bip() {
     // Add your custom code for the FOOT_PRESS_BIP command here
 }
 
@@ -83,7 +83,7 @@ void handleFootPressBip() {
 /** 0x80, 0xA0, 0xFF, 0x00, 0x00, 0x83, 0x00, 0x05, 0xA0, */
 
 // Function to interpret and execute commands with arguments
-void interpretCommand(uint8_t* bytecode) {
+void interpret_command(uint8_t* bytecode) {
     uint8_t command = bytecode[pc];
     pc = pc + 1; 
     switch (command) {
@@ -107,8 +107,8 @@ void interpretCommand(uint8_t* bytecode) {
             pc = pc + 2;
             state = RT_TIMER_ENABLE;
             break;
-        case SEND:
-            Log.noticeln(F("------ Command SEND"));
+        case SEND_EVENT:
+            Log.noticeln(F("------ Command SEND_EVENT"));
             // Handle SEND command
             break;
         case LED_COLOR:
@@ -117,7 +117,7 @@ void interpretCommand(uint8_t* bytecode) {
             color |= ((uint32_t)bytecode[pc +1] << 8);
             color |= bytecode[pc + 2];
             pc = pc + 3;
-            setColor(color);
+            led_set_color(color);
             // Handle LED_COLOR command with args
             break;
         case LED_TRAFFIC_LIGHT:
@@ -140,20 +140,20 @@ void interpretCommand(uint8_t* bytecode) {
 }
 
 
-void setupRuntime()
+void runtime_setup()
 {
     state = RT_RUN;
 }
 
 
-void taskCallbackRuntime()
+void runtime_task()
 {
     static uint16_t tick = 0;
     switch(state)
     {
         case RT_RUN:
             tick = 0;
-            interpretCommand(exampleReactCode);
+            interpret_command(exampleReactCode);
         case RT_TIMER_ENABLE:
             tick++;
             if ((tick * RUNTIME_CYCLE) == 1000) // 1s

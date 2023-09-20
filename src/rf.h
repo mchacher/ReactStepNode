@@ -10,7 +10,7 @@ struct payload_t
   unsigned long counter;
 };
 
-void setupRF();
-void taskCallbackRF();
+void rf_setup();
+void rf_task();
 
 #endif

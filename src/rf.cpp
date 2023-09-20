@@ -11,7 +11,7 @@ RF24Mesh mesh(radio, network);
 
 uint32_t displayTimer = 0;
 
-void taskCallbackRF()
+void rf_task()
 {
   mesh.update();
 
@@ -60,7 +60,7 @@ void taskCallbackRF()
   }
 }
 
-void setupRF()
+void rf_setup()
 {
   Serial.begin(115200);
   while (!Serial)
