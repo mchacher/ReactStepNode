@@ -27,12 +27,12 @@ typedef enum {
 typedef struct {
     EVENT_TYPE_APP type;               // Type of the event
     uint32_t timestamp;
-} Event_App;
+} EVENT_APP;
 
 // Define a struct to represent an applicative event
 typedef struct {
     EVENT_TYPE_SYS type;               // Type of the event
     uint32_t timestamp;
-} Event_Sys;
+} EVENT_SYS;
 
 #endif

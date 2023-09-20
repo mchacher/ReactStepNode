@@ -10,7 +10,7 @@
 const uint32_t EVENT_DURATION_THRESHOLD = 2000;
 
 // Create an instance of the Queue class for application events
-Queue<Event_App, MAX_EVENT_QUEUE_SIZE> queue_app_event;
+Queue<EVENT_APP, MAX_EVENT_QUEUE_SIZE> queue_app_event;
 
 /**
  * @brief Initialize the event registry (queue_app_event) when the system starts.
@@ -29,7 +29,7 @@ void event_registry_task()
 
     // Iterate through the application event queue
     while (!queue_app_event.isEmpty()) {
-        Event_App frontEvent;
+        EVENT_APP frontEvent;
 
         // Access the front application event without removing it
         if (queue_app_event.frontItem(frontEvent)) {
@@ -76,7 +76,7 @@ bool event_registry_is_full()
  */
 bool event_registry_push(EVENT_TYPE_APP event_type)
 {
-    Event_App event;
+    EVENT_APP event;
     event.type = event_type;
     event.timestamp = millis();
     
@@ -90,7 +90,7 @@ bool event_registry_push(EVENT_TYPE_APP event_type)
  * @param event The event to pop from the queue.
  * @return true if an event was successfully popped, false if the queue is empty.
  */
-bool event_registry_pop(Event_App &event)
+bool event_registry_pop(EVENT_APP &event)
 {
     // Pop the application event from the event queue
     return queue_app_event.pop(event);

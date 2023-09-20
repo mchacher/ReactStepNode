@@ -10,6 +10,6 @@ void event_registry_task();
 bool event_registry_is_empty();
 bool event_registry_is_full();
 bool event_registry_push(EVENT_TYPE_APP event_type);
-bool event_registry_pop(Event_App& event);
+bool event_registry_pop(EVENT_APP& event);
 
 #endif
