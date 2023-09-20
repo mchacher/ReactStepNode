@@ -2,96 +2,125 @@
 #include <ArduinoLog.h>
 #include "event_registry.h"
 #include "event_type.h"
-#include "queue.h" 
+#include "event_queue.h" // Include the EventQueue class
 
-#define MAX_EVENT_QUEUE_SIZE 10
+// Create an instance of the EventQueue class for application events
+EventQueue queue_app_event;
+// Create an instance of the EventQueue class for system events
+EventQueue queue_sys_event;
 
 // Define the duration threshold for event removal (in milliseconds)
 const uint32_t EVENT_DURATION_THRESHOLD = 2000;
 
-// Create an instance of the Queue class for application events
-Queue<EVENT_APP, MAX_EVENT_QUEUE_SIZE> queue_app_event;
-
 /**
- * @brief Initialize the event registry (queue_app_event) when the system starts.
+ * @brief Initialize the event registry (queue_app_event and queue_sys_event) when the system starts.
  */
 void event_registry_setup()
 {
+    // No need to initialize the queues here; it's done in the EventQueue constructor.
 }
 
 /**
- * @brief Task function to clean and remove application events older than EVENT_DURATION_THRESHOLD.
+ * @brief Task function to clean and remove application events and system events older than EVENT_DURATION_THRESHOLD.
  */
 void event_registry_task()
 {
     // Get the current time in milliseconds
     uint32_t currentMillis = millis();
 
-    // Iterate through the application event queue
-    while (!queue_app_event.isEmpty()) {
-        EVENT_APP frontEvent;
+    // Clean up the application event queue
+    queue_app_event.cleanUpQueue(currentMillis, EVENT_DURATION_THRESHOLD);
 
-        // Access the front application event without removing it
-        if (queue_app_event.frontItem(frontEvent)) {
-            // Check if the front event has been in the queue for more than the threshold
-            if (currentMillis - frontEvent.timestamp > EVENT_DURATION_THRESHOLD) {
-                Log.noticeln("event_registry_task: removing front application event");
-                // Remove the application event from the queue
-                queue_app_event.pop(frontEvent);
-            } else {
-                // The application event is within the threshold, so you can process it if needed
-                // For example: Handle the event
-                // handleEvent(frontEvent);
-                break; // Exit the loop since further events are newer
-            }
-        }
-    }
+    // Clean up the system event queue
+    queue_sys_event.cleanUpQueue(currentMillis, EVENT_DURATION_THRESHOLD);
 }
 
 /**
- * @brief Check if the event registry (queue_app_event) is empty.
+ * @brief Check if the application event registry (queue_app_event) is empty.
  *
- * @return true if the event registry is empty, false otherwise.
+ * @return true if the application event registry is empty, false otherwise.
  */
-bool event_registry_is_empty()
+bool event_registry_is_empty_app_event()
 {
     return queue_app_event.isEmpty();
 }
 
 /**
- * @brief Check if the event registry (queue_app_event) is full.
+ * @brief Check if the system event registry (queue_sys_event) is empty.
  *
- * @return true if the event registry is full, false otherwise.
+ * @return true if the system event registry is empty, false otherwise.
  */
-bool event_registry_is_full()
+bool event_registry_is_empty_sys_event()
+{
+    return queue_sys_event.isEmpty();
+}
+
+/**
+ * @brief Check if the application event registry (queue_app_event) is full.
+ *
+ * @return true if the application event registry is full, false otherwise.
+ */
+bool event_registry_is_full_app_event()
 {
     return queue_app_event.isFull();
 }
 
 /**
- * @brief Push an application event onto the event registry (queue_app_event).
+ * @brief Check if the system event registry (queue_sys_event) is full.
+ *
+ * @return true if the system event registry is full, false otherwise.
+ */
+bool event_registry_is_full_sys_event()
+{
+    return queue_sys_event.isFull();
+}
+
+/**
+ * @brief Push an event onto the appropriate event registry (queue_app_event or queue_sys_event)
+ *        based on the event type.
  *
  * @param event_type The event type to push onto the queue.
  * @return true if the event was successfully pushed, false if the queue is full.
  */
-bool event_registry_push(EVENT_TYPE_APP event_type)
+bool event_registry_push(EVENT_TYPE event_type)
 {
-    EVENT_APP event;
+    EVENT event;
     event.type = event_type;
     event.timestamp = millis();
     
-    // Push the application event onto the event queue
-    return queue_app_event.push(event);
+    // Determine which queue to push the event to based on its type
+    if (event_type >= EVENT_SYS_TYPE_START && event_type < EVENT_SYS_TYPE_RESET) {
+        // Push the system event onto the system event queue
+        return queue_sys_event.push(event);
+    } else if (event_type >= EVENT_APP_TYPE_FOOT_PRESS && event_type < 0x80) {
+        // Push the application event onto the application event queue
+        return queue_app_event.push(event);
+    } else {
+        // Invalid event type
+        return false;
+    }
 }
 
 /**
- * @brief Pop (remove and retrieve) an application event from the event registry (queue_app_event).
+ * @brief Pop (remove and retrieve) an application event from the application event registry (queue_app_event).
  *
  * @param event The event to pop from the queue.
  * @return true if an event was successfully popped, false if the queue is empty.
  */
-bool event_registry_pop(EVENT_APP &event)
+bool event_registry_pop_app_event(EVENT &event)
 {
-    // Pop the application event from the event queue
+    // Pop the application event from the application event queue
     return queue_app_event.pop(event);
+}
+
+/**
+ * @brief Pop (remove and retrieve) a system event from the system event registry (queue_sys_event).
+ *
+ * @param event The event to pop from the queue.
+ * @return true if an event was successfully popped, false if the queue is empty.
+ */
+bool event_registry_pop_sys_event(EVENT &event)
+{
+    // Pop the system event from the system event queue
+    return queue_sys_event.pop(event);
 }
