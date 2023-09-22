@@ -12,6 +12,8 @@ EventQueue queue_sys_event;
 // Define the duration threshold for event removal (in milliseconds)
 const uint32_t EVENT_DURATION_THRESHOLD = 2000;
 
+bool app_event = false;
+
 /**
  * @brief Initialize the event registry (queue_app_event and queue_sys_event) when the system starts.
  */
@@ -87,15 +89,20 @@ bool event_registry_push(EVENT_TYPE event_type)
     EVENT event;
     event.type = event_type;
     event.timestamp = millis();
-    
+
     // Determine which queue to push the event to based on its type
-    if (event_type >= EVENT_SYS_TYPE_START && event_type < EVENT_SYS_TYPE_RESET) {
+    if (event_type >= EVENT_SYS_TYPE_START && event_type < EVENT_SYS_TYPE_RESET)
+    {
         // Push the system event onto the system event queue
         return queue_sys_event.push(event);
-    } else if (event_type >= EVENT_APP_TYPE_FOOT_PRESS && event_type < 0x80) {
+    }
+    else if (app_event && (event_type >= EVENT_APP_TYPE_FOOT_PRESS) && (event_type < 0x80))
+    {
         // Push the application event onto the application event queue
         return queue_app_event.push(event);
-    } else {
+    }
+    else
+    {
         // Invalid event type
         return false;
     }
@@ -123,4 +130,23 @@ bool event_registry_pop_sys_event(EVENT &event)
 {
     // Pop the system event from the system event queue
     return queue_sys_event.pop(event);
+}
+
+/**
+ * @brief Disable App Events. Application events are not managed by the registry.
+ *
+ */
+void event_registry_disable_app_event()
+{
+    app_event = false;
+    queue_app_event.flush();
+}
+
+/**
+ * @brief Enable App Events. Application events are managed by the registry.
+ *
+ */
+void event_registry_enable_app_event()
+{
+    app_event = true;
 }
