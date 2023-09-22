@@ -2,10 +2,7 @@
 #define EVENT_TYPE_H
 
 #include "Arduino.h"
-#include "queue.h" // Include the original Queue class
-
-// Define the maximum size for the event queue
-#define MAX_EVENT_QUEUE_SIZE 10
+#include "queue.h"
 
 // Define an enumeration to represent system event types with hex values
 typedef enum {
