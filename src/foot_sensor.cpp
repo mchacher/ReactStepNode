@@ -33,5 +33,9 @@ void foot_sensor_task()
         Log.noticeln(F("------ pushing FOOT_PRESS event"));
         // To push a workout event (e.g., foot press):
         pending_event = !event_registry_push(EVENT_APP_TYPE_FOOT_PRESS);
+        if (pending_event)
+        {
+            Log.noticeln(F("------ pending FOOT_PRESS event"));
+        }
     }
 }
