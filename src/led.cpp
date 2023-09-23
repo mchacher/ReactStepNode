@@ -1,18 +1,13 @@
 #include <Arduino.h>
 #include "led.h"
 #include <FastLED.h>
-
-
-// #leds are in the strip
-#define NUM_LEDS 1
-
-// Data Pin for WS2812
-#define DATA_PIN 4
+#include "ArduinoLog.h"
+#include "hardware_config.h"
 
 // This is an array of leds.  One item for each led in your strip.
 CRGB leds[NUM_LEDS];
 
-uint32_t current_color = 0xFFFFFF; // black
+uint32_t current_color = CRGB::Black; // black
 
 void led_set_color(uint32_t color)
 {
@@ -21,16 +16,6 @@ void led_set_color(uint32_t color)
 
 void led_task()
 {
-  //static CRGB color = CRGB::Blue;
-
-  // if (color == CRGB::Blue)
-  // {
-  //   color = CRGB::Red;
-  // }
-  // else
-  // {
-  //   color = CRGB::Blue;
-  // }
   fill_solid(leds, NUM_LEDS, current_color);
   FastLED.show();
 }
@@ -39,7 +24,10 @@ void led_task()
 
 void led_setup()
 {
+  Log.notice(F("led: setup" CR));
   pinMode(LED_BUILTIN, OUTPUT);
-  FastLED.addLeds<WS2812B, DATA_PIN, GRB>(leds, NUM_LEDS);
-  FastLED.setBrightness(50);
+  FastLED.addLeds<WS2812B, PIN_LED_DATA, GRB>(leds, NUM_LEDS);
+  FastLED.setBrightness(20);
+  fill_solid(leds, NUM_LEDS, CRGB::Black);
+  FastLED.show();
 }
