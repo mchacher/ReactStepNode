@@ -57,11 +57,18 @@ public:
     bool frontItem(T &item);
 
     /**
+     * @brief Removes the front item from the queue.
+     * 
+     * @return true if the front item was successfully removed, false if the queue is empty.
+     */
+    bool removeFront();
+
+    /**
      * @brief Removes all items from the queue.
      */
     void flush();
     
-private:
+protected:
     T queue[MAX_QUEUE_SIZE];
     int8_t front;
     int8_t rear;
@@ -120,6 +127,21 @@ bool Queue<T, MAX_QUEUE_SIZE>::frontItem(T &item) {
         return false; // Queue is empty
     } else {
         item = queue[front];
+        return true;
+    }
+}
+
+template <typename T, int MAX_QUEUE_SIZE>
+bool Queue<T, MAX_QUEUE_SIZE>::removeFront() {
+    if (isEmpty()) {
+        return false; // Queue is empty
+    } else {
+        front++;
+        if (front > rear) {
+            // Reset front and rear when the queue becomes empty after removal
+            front = 0;
+            rear = -1;
+        }
         return true;
     }
 }
