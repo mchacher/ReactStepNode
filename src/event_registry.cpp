@@ -94,18 +94,32 @@ bool event_registry_push(EVENT_TYPE event_type)
     if (event_type >= EVENT_SYS_TYPE_START && event_type < EVENT_SYS_TYPE_RESET)
     {
         // Push the system event onto the system event queue
+        Log.noticeln(F("event_registry: Pushing sys event to queue"));
         return queue_sys_event.push(event);
     }
     else if (app_event && (event_type >= EVENT_APP_TYPE_FOOT_PRESS) && (event_type < 0x80))
     {
         // Push the application event onto the application event queue
+        Log.noticeln(F("event_registry: Pushing app event to queue"));
         return queue_app_event.push(event);
+    }
+    else if (!app_event && (event_type >= EVENT_APP_TYPE_FOOT_PRESS) && (event_type < 0x80))
+    {
+        // return true if app event disabled
+        Log.noticeln(F("event_registry: Ignoring app event"));
+        return true;
     }
     else
     {
         // Invalid event type
         return false;
     }
+}
+
+bool event_registry_get_app_event(EVENT_TYPE type, unsigned long freshness, EVENT &event)
+{
+    //Log.noticeln(F("Checking app event in registry with freshness %lu"), freshness);
+    return queue_app_event.searchEvent(type, freshness, event);
 }
 
 /**
@@ -130,6 +144,30 @@ bool event_registry_pop_sys_event(EVENT &event)
 {
     // Pop the system event from the system event queue
     return queue_sys_event.pop(event);
+}
+
+/**
+ * @brief Get first system event from the system event registry (queue_sys_event).
+ *
+ * @param event The event to get from the queue.
+ * @return true if an event was successfully get, false if the queue is empty.
+ */
+bool event_registry_get_front_sys_event(EVENT &event)
+{
+    // Pop the system event from the system event queue
+    return queue_sys_event.frontItem(event);
+}
+
+/**
+ * @brief Remove first system event from the system event registry (queue_sys_event).
+ *
+ * @param event The event to get from the queue.
+ * @return true if an event was successfully get, false if the queue is empty.
+ */
+bool event_registry_remove_front_sys_event()
+{
+    // Pop the system event from the system event queue
+    return queue_sys_event.removeFront();
 }
 
 /**
