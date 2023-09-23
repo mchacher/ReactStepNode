@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
 #include <ArduinoLog.h>
-#include "runtime.h"
+#include "react_engine.h"
 #include "led.h"
 #include "event_type.h"
 #include "event_registry.h"
@@ -31,16 +31,18 @@
 /** 0x80, 0xA0, 0xFF, 0x00, 0x00, 0x83, 0x00, 0x05, 0xA0, */
 uint8_t exampleReactCode[] = {
     START,
-    LED_COLOR, 0xFF, 0x00, 0x00, // LED ROUGE
-    TIMER, 0, 2, // Timer 2s
+    LED_COLOR, 0xFF, 0x00, 0x00,                                                       // LED ROUGE
+    TIMER, 0, 2,                                                                       // Timer 2s
     LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF, // LED BLEUE
-    WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS, // WAIT EVENT FOOT PRESS
+    WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,                                             // WAIT EVENT FOOT PRESS
     END};
 
-int pc = 0;
-uint16_t timer = 0;
-uint8_t event_app = 0;
-RT_State state = RT_IDLE;
+static int pc = 0;
+static uint16_t timer = 0;
+static uint8_t waited_app_event = 0;
+static unsigned long waited_app_event_time;
+static RE_STATE re_state = RE_IDLE;
+static uint16_t tick = 0;
 
 void handle_start()
 {
@@ -99,33 +101,35 @@ void interpret_command(uint8_t *bytecode)
     {
     case START:
         // Handle START command
-        Log.noticeln(F("------ Command START"));
+        Log.noticeln(F("react_engine: Command START"));
         break;
     case END:
         // Handle END command
-        Log.noticeln(F("------ Command END"));
+        Log.noticeln(F("react_engine: Command END"));
         pc = 0;
         break;
     case WAIT_EVENT:
-        state = RT_HOLD_WAIT_APP_EVENT;
-        event_app = bytecode[pc];
+        re_state = RE_HOLD_WAIT_APP_EVENT;
+        waited_app_event = bytecode[pc];
+        waited_app_event_time = millis();
         pc = pc + 1;
-        Log.noticeln(F("------ Command WAIT_EVENT, event: %i"), event_app);
+        Log.noticeln(F("react_engine: Command WAIT_EVENT, event: %i"), waited_app_event);
+        event_registry_enable_app_event();
         break;
     case TIMER:
         // Handle TIMER command with args
-        Log.noticeln(F("------ Command TIMER %l"), millis());
+        Log.noticeln(F("react_engine: Command TIMER %l"), millis());
         timer = (uint16_t)(bytecode[pc] << 8);
         timer |= bytecode[pc + 1];
         pc = pc + 2;
-        state = RT_HOLD_TIMER_ENABLE;
+        re_state = RE_HOLD_TIMER_ENABLE;
         break;
     case SEND_EVENT:
-        Log.noticeln(F("------ Command SEND_EVENT"));
+        Log.noticeln(F("react_engine: Command SEND_EVENT"));
         // Handle SEND command
         break;
     case LED_COLOR:
-        Log.noticeln(F("------ Command LED_COLOR"));
+        Log.noticeln(F("react_engine: Command LED_COLOR"));
         uint32_t color = ((uint32_t)bytecode[pc] << 16);
         color |= ((uint32_t)bytecode[pc + 1] << 8);
         color |= bytecode[pc + 2];
@@ -134,64 +138,81 @@ void interpret_command(uint8_t *bytecode)
         // Handle LED_COLOR command with args
         break;
     case LED_TRAFFIC_LIGHT:
-        Log.noticeln(F("------ Command LED_TRAFFIC_LIGHT"));
+        Log.noticeln(F("react_engine: Command LED_TRAFFIC_LIGHT"));
         // Handle LED_TRAFFIC_LIGHT command
         break;
     case FOOT_PRESS_COLOR:
-        Log.notice(F("------ Command FOOT_PRESS_COLOR"));
+        Log.notice(F("react_engine: Command FOOT_PRESS_COLOR"));
         // Handle FOOT_PRESS_COLOR command with args
         break;
     case FOOT_PRESS_BIP:
-        Log.notice(F("------ Command FOOT_PRESS_BIP"));
+        Log.notice(F("react_engine: Command FOOT_PRESS_BIP"));
         // Handle FOOT_PRESS_BIP command
         break;
     default:
-        Log.noticeln(F("------ Command UNKNOWN COMMAND"));
+        Log.noticeln(F("react_engine: Command UNKNOWN COMMAND"));
         // Unknown command
         break;
     }
 }
 
-void runtime_setup()
+void react_engine_setup()
 {
-    state = RT_READY;
+    Log.notice(F("react_engine: setup" CR));
+    re_state = RE_READY;
 }
 
-void runtime_task()
+void react_engine_stop()
 {
-    static uint16_t tick = 0;
-    // check whether there is a system event
-    // TODO ...
-    switch (state)
+    re_state = RE_READY;
+    pc = 0;
+    waited_app_event = 0;
+    event_registry_disable_app_event();
+    led_set_color(COLOR_BLACK);
+}
+
+void react_engine_task()
+{
+    switch (re_state)
     {
-    case RT_READY:
-        event_registry_enable_app_event();
-        state = RT_RUN;
-    case RT_RUN:
+    case RE_READY:
+        re_state = RE_RUN;
+    case RE_RUN:
         tick = 0;
         interpret_command(exampleReactCode);
         break;
-    case RT_HOLD_TIMER_ENABLE:
+    case RE_HOLD_TIMER_ENABLE:
         tick++;
-        if ((tick * RUNTIME_CYCLE) == 1000) // 1s
+        if ((tick * REACT_ENGINE_CYCLE_TIME) == 1000) // 1s
         {
             timer = timer - 1;
             if (timer == 0)
             {
-                state = RT_RUN;
+                re_state = RE_RUN;
             }
             tick = 0;
         }
         break;
-    case RT_HOLD_WAIT_APP_EVENT:
+    case RE_HOLD_WAIT_APP_EVENT:
         EVENT app_event;
-        if (event_registry_pop_app_event(app_event))
+        // if (event_registry_pop_app_event(app_event))
+        // {
+        //     // An application event was successfully popped.
+        //     if ((app_event.type == waited_app_event) || ((waited_app_event == EVENT_APP_TYPE_FOOT_PRESS) && ((app_event.type == EVENT_APP_TYPE_FOOT_PRESS_LEFT) || (app_event.type == EVENT_APP_TYPE_FOOT_PRESS_RIGHT))))
+        //     {
+        //         re_state = RE_RUN;
+        //     }
+        // }
+        if (waited_app_event == EVENT_APP_TYPE_FOOT_PRESS)
         {
-            // An application event was successfully popped.
-            if (app_event.type == event_app)
+            if (event_registry_get_app_event(EVENT_APP_TYPE_FOOT_PRESS_LEFT, waited_app_event_time, app_event) || event_registry_get_app_event(EVENT_APP_TYPE_FOOT_PRESS_RIGHT, waited_app_event_time, app_event))
             {
-                state = RT_RUN;
+                re_state = RE_RUN;
             }
+        }
+        else if (event_registry_get_app_event((EVENT_TYPE)waited_app_event, waited_app_event_time, app_event))
+        {
+            re_state = RE_RUN;
         }
         break;
     }
