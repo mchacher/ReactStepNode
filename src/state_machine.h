@@ -5,13 +5,14 @@
 typedef enum  
 {
     INIT,
-    IDLE,
-    RUNNING,                
-    SETTING,             
+    READY,
+    RUN,                
+    SET,             
     PAUSE,
 } STATE_PRODUCT;
 
 void state_machine_setup();
 void state_machine_task();
+STATE_PRODUCT state_machine_get_active_state();
 
 #endif

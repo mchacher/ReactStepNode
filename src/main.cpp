@@ -14,15 +14,19 @@
 
 Scheduler runner;
 
+#define TASK_CYCLE_FAST 20
+#define TASK_CYCLE_MEDIUM 100
+#define TASK_CYCLE_SLOW 250
+
 // Tasks
-Task task_led(50, TASK_FOREVER, &led_task);
+Task task_led(TASK_CYCLE_MEDIUM, TASK_FOREVER, &led_task);
 Task task_react_engine(REACT_ENGINE_CYCLE_TIME, TASK_FOREVER, &react_engine_task);
 // extern Task task_react_engine;
-Task task_event_registry(100, TASK_FOREVER, &event_registry_task);
-Task task_foot_sensor(20, TASK_FOREVER, &foot_sensor_task);
-Task task_display(300, TASK_FOREVER, &display_task);
-Task task_button(100, TASK_FOREVER, &button_task);
-Task task_state_machine(200, TASK_FOREVER, &state_machine_task);
+Task task_event_registry(TASK_CYCLE_SLOW, TASK_FOREVER, &event_registry_task);
+Task task_foot_sensor(TASK_CYCLE_FAST, TASK_FOREVER, &foot_sensor_task);
+Task task_display(TASK_CYCLE_MEDIUM, TASK_FOREVER, &display_task);
+Task task_button(TASK_CYCLE_FAST, TASK_FOREVER, &button_task);
+Task task_state_machine(TASK_CYCLE_MEDIUM, TASK_FOREVER, &state_machine_task);
 
 #include "Arduino.h"
 #include "ArduinoLog.h"
@@ -31,6 +35,18 @@ Task task_state_machine(200, TASK_FOREVER, &state_machine_task);
 #include "event_registry.h"
 
 static STATE_PRODUCT state;
+unsigned long timestamp_last_state_transition = 0;
+
+STATE_PRODUCT state_machine_get_active_state()
+{
+  return state;
+}
+
+void state_machine_switch_state(STATE_PRODUCT new_state)
+{
+  state = new_state;
+  timestamp_last_state_transition = millis();
+}
 
 void state_machine_setup()
 {
@@ -47,51 +63,66 @@ void state_machine_task()
   {
   case INIT:
     // Handle INIT state
-    state = IDLE;
-    Log.noticeln(F("state_machine_task: switching to IDLE state"));
+    state_machine_switch_state(READY);
+    Log.noticeln(F("state_machine_task: switching to READY state"));
+    display_message(MSG_HELLO);
     break;
 
-  case IDLE:
+  case READY:
+
     // Handle IDLE state
     // need a START event to switch to RUNNING state
     if (event_registry_get_front_sys_event(event))
     {
       if (event.type == EVENT_SYS_TYPE_START)
       {
-        state = RUNNING;
-        Log.noticeln(F("state_machine_task: switching to RUNNING state"));
+        state_machine_switch_state(RUN);
+        Log.noticeln(F("state_machine_task: switching to RUN state"));
         task_react_engine.enable();
         event_registry_remove_front_sys_event();
+        display_message(MSG_GO, 2);
       }
     }
     break;
 
-  case RUNNING:
+  case RUN:
     // Handle RUNNING state
     // Transition to the next state if needed
+    // display_message(MSG_GO);
     if (event_registry_get_front_sys_event(event))
     {
-      if (event.type == EVENT_SYS_TYPE_STOP)
+      switch (event.type)
       {
-        state = IDLE;
-        Log.noticeln(F("state_machine_task: switching to IDLE state"));
+      case EVENT_SYS_TYPE_STOP:
+        state_machine_switch_state(READY);
+        Log.noticeln(F("state_machine_task: STOP event, switching to READY state"));
         task_react_engine.disable();
         react_engine_stop();
         event_registry_remove_front_sys_event();
+        display_message(MSG_STOP);
+        break;
+      case EVENT_SYS_TYPE_START:
+        state_machine_switch_state(READY);
+        Log.noticeln(F("state_machine_task: PAUSE event, switching to READY state"));
+        task_react_engine.disable();
+        react_engine_pause();
+        event_registry_remove_front_sys_event();
+        display_message(MSG_PAUSE);
+        break;
       }
     }
     break;
 
-  case SETTING:
+  case SET:
     // Handle SETTING state
     // Transition to the next state if needed
-    state = PAUSE;
+    state_machine_switch_state(PAUSE);
     break;
 
   case PAUSE:
     // Handle PAUSE state
     // Transition to the next state if needed
-    state = IDLE;
+    state_machine_switch_state(READY);
     break;
 
   default:
@@ -108,7 +139,7 @@ void setup()
   while (!Serial)
   {
   }
-  Log.begin(LOG_LEVEL_VERBOSE, &Serial);
+  Log.begin(LOG_LEVEL_NOTICE, &Serial);
 #ifdef MINI_STEP_MOCK_UP
   Log.notice(F("Main: Starting Mini Step Mockup with ID: %d" CR), NODE_ID);
 #elif

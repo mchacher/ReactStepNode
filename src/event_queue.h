@@ -3,6 +3,8 @@
 
 #include "Arduino.h"
 #include "queue.h" // Include the original Queue class
+#include "event_type.h"
+#include "ArduinoLog.h"
 
 // Define the maximum size for the event queue
 #define MAX_EVENT_QUEUE_SIZE 20
@@ -27,7 +29,7 @@ public:
                 // Check if the front event has been in the queue for more than the threshold
                 if (currentMillis - frontEvent.timestamp > EVENT_DURATION_THRESHOLD)
                 {
-                    Log.noticeln("Cleaning up the event queue: Removing an event");
+                    Log.noticeln(F("event queue: removing front event - time has expired"));
                     // Remove the event from the queue
                     pop(frontEvent);
                 }
@@ -52,7 +54,7 @@ public:
             // Check if the current event matches the desired event type
             if (currentEvent.type == EVENT_TYPE)
             {
-                Log.noticeln("event queue: app event timestamp = %lu", currentEvent.timestamp);
+                Log.verbose(F("event queue: app event timestamp = %lu"), currentEvent.timestamp);
                 // Check if the current event has freshness higher than the threshold
                 if (currentEvent.timestamp > freshness)
                 {
