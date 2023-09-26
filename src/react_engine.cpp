@@ -12,8 +12,10 @@ uint8_t exampleReactCode[] =
         START,
         LED_COLOR, 0xFF, 0x00, 0x00, // LED ROUGE
         FOOT_PRESS_LEFT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+        FOOT_PRESS_RIGHT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         TIMER, 0, 10, // Timer 2s
         FOOT_PRESS_LEFT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+        FOOT_PRESS_RIGHT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         TIMER, 0, 20,                                                                      // Timer 2s
         LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF, // LED BLEUE
         WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,                                        // WAIT EVENT FOOT PRESS
@@ -171,13 +173,14 @@ void handleAsyncCommand(uint8_t commandCode, EVENT_TYPE eventType, void (*handle
 }
 
 /**
- * @brief Handle the FOOT_PRESS_LEFT_COLOR command.
+ * @brief Handle the FOOT_PRESS_COLOR commands.
  * 
  * @param bytecode The bytecode containing the command and its arguments.
+ * @param eventType The event type to use for ASYNC_COMMANDS.
  */
-void handleFootPressLeftColorCommand(uint8_t *bytecode)
+void handleFootPressColorCommand(uint8_t *bytecode, EVENT_TYPE eventPress, EVENT_TYPE eventRelease)
 {
-    Log.noticeln(F("react_engine: Command FOOT_PRESS_LEFT_COLOR"));
+    uint8_t command = bytecode[pc -1];
     uint32_t press_color = ((uint32_t)bytecode[pc] << 16);
     press_color |= ((uint32_t)bytecode[pc + 1] << 8);
     press_color |= bytecode[pc + 2];
@@ -189,9 +192,9 @@ void handleFootPressLeftColorCommand(uint8_t *bytecode)
     // Define parameters for the handler function
     uint32_t params[2] = {press_color, 0};
     // Handle ASYNC_COMMANDS separately with parameters
-    handleAsyncCommand(FOOT_PRESS_LEFT_COLOR, EVENT_APP_TYPE_FOOT_PRESS_LEFT, &change_react_device_color, params);
+    handleAsyncCommand(command, eventPress, &change_react_device_color, params);
     params[0] = release_color;
-    handleAsyncCommand(FOOT_PRESS_LEFT_COLOR, EVENT_APP_TYPE_FOOT_RELEASE_LEFT, &change_react_device_color, params);
+    handleAsyncCommand(command, eventRelease, &change_react_device_color, params);
 }
 
 /**
@@ -226,8 +229,17 @@ void interpret_command(uint8_t *bytecode)
         handleLedColorCommand(bytecode);
         break;
     case FOOT_PRESS_LEFT_COLOR:
-        handleFootPressLeftColorCommand(bytecode);
+        Log.noticeln(F("react_engine: Command FOOT_PRESS_LEFT_COLOR"));
+        handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_LEFT, EVENT_APP_TYPE_FOOT_RELEASE_LEFT);
         break;
+    case FOOT_PRESS_RIGHT_COLOR:
+        Log.noticeln(F("react_engine: Command FOOT_PRESS_RIGHT_COLOR"));
+        handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, EVENT_APP_TYPE_FOOT_RELEASE_RIGHT);
+        break;
+    case FOOT_PRESS_COLOR:
+        Log.noticeln(F("react_engine: Command FOOT_PRESS_LEFT_COLOR"));
+        handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_LEFT, EVENT_APP_TYPE_FOOT_RELEASE_LEFT);
+        handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, EVENT_APP_TYPE_FOOT_RELEASE_RIGHT);
     default:
         Log.noticeln(F("react_engine: Command UNKNOWN COMMAND"));
         // Unknown command
