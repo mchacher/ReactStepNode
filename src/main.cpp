@@ -37,6 +37,7 @@ Task task_state_machine(TASK_CYCLE_MEDIUM, TASK_FOREVER, &state_machine_task);
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
 
+
 STATE_PRODUCT state_machine_get_active_state()
 {
   return state;
@@ -57,40 +58,40 @@ void state_machine_task()
 {
 
   EVENT event;
-  // Your code here to perform actions and transitions based on the current state
-  // For example:
-  switch (state)
+  if (event_registry_pop_sys_event(event))
   {
-  case INIT:
-    // Handle INIT state
-    state_machine_switch_state(READY);
-    Log.noticeln(F("state_machine_task: switching to READY state"));
-    display_message(MSG_HELLO);
-    break;
-
-  case READY:
-
-    // Handle IDLE state
-    // need a START event to switch to RUNNING state
-    if (event_registry_get_front_sys_event(event))
+    switch (state)
     {
-      if (event.type == EVENT_SYS_TYPE_START)
+    case INIT:
+      if (event.type == EVENT_SYS_TYPE_READY)
       {
+        state_machine_switch_state(READY);
+        Log.noticeln(F("state_machine_task: READY event, switching to READY state"));
+        display_message(MSG_HELLO, 2);
+        display_push_message_to_queue(MSG_IDLE, 0);
+      }
+      break;
+    case READY:
+      switch (event.type)
+      {
+      case EVENT_SYS_TYPE_START:
         state_machine_switch_state(RUN);
         Log.noticeln(F("state_machine_task: switching to RUN state"));
         task_react_engine.enable();
-        event_registry_remove_front_sys_event();
         display_message(MSG_GO, 2);
+        break;
+      case EVENT_SYS_TYPE_SET:
+        state_machine_switch_state(SET);
+        Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
+        display_message(MSG_SET,2);
+        break;
+      default:
+        break;
       }
-    }
-    break;
+      break;
 
-  case RUN:
-    // Handle RUNNING state
-    // Transition to the next state if needed
-    // display_message(MSG_GO);
-    if (event_registry_get_front_sys_event(event))
-    {
+    case RUN:
+      // Handle RUNNING state
       switch (event.type)
       {
       case EVENT_SYS_TYPE_STOP:
@@ -98,7 +99,6 @@ void state_machine_task()
         Log.noticeln(F("state_machine_task: STOP event, switching to READY state"));
         task_react_engine.disable();
         react_engine_stop();
-        event_registry_remove_front_sys_event();
         display_message(MSG_STOP);
         break;
       case EVENT_SYS_TYPE_START:
@@ -106,28 +106,34 @@ void state_machine_task()
         Log.noticeln(F("state_machine_task: PAUSE event, switching to READY state"));
         task_react_engine.disable();
         react_engine_pause();
-        event_registry_remove_front_sys_event();
         display_message(MSG_PAUSE);
         break;
       }
+      break;
+
+    case SET:
+      // Handle SETTING state
+      switch (event.type)
+      {
+      case EVENT_SYS_TYPE_SET:
+        Log.noticeln(F("state_machine_task: SET event, switching to INIT state"));
+        state_machine_switch_state(READY);
+        display_push_message_to_queue(MSG_IDLE, 0);
+        break;
+      default:
+        break;
+      }
+      break;
+    case PAUSE:
+      // Handle PAUSE state
+      // Transition to the next state if needed
+      state_machine_switch_state(READY);
+      break;
+
+    default:
+      // Handle any unexpected or error state
+      break;
     }
-    break;
-
-  case SET:
-    // Handle SETTING state
-    // Transition to the next state if needed
-    state_machine_switch_state(PAUSE);
-    break;
-
-  case PAUSE:
-    // Handle PAUSE state
-    // Transition to the next state if needed
-    state_machine_switch_state(READY);
-    break;
-
-  default:
-    // Handle any unexpected or error state
-    break;
   }
 
   // Your code here for any other tasks in the main loop
@@ -191,6 +197,8 @@ void setup()
   display_setup();
   runner.addTask(task_display);
   task_display.enable();
+
+  event_registry_push(EVENT_SYS_TYPE_READY);
 }
 
 void loop()
