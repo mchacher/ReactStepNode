@@ -27,12 +27,4 @@ enum {
 #define COLOR_ORANGE 0xFFA500
 #define COLOR_YELLOW 0xFFFF00
 
-typedef struct 
-{
-    bool active;
-    uint8_t bytecode;
-    EVENT_TYPE event_type;
-    void (*handler_function)();
-} ASYNC_COMMANDS;
-
 #endif

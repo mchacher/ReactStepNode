@@ -2,8 +2,15 @@
 #define ASYNS_COMMANDS_LIST
 
 #include "list.h"
-#include "react_code.h"
 #include "event_type.h"
+
+typedef struct 
+{
+    bool active;
+    uint8_t bytecode;
+    EVENT_TYPE event_type;
+    void (*handler_function)();
+} ASYNC_COMMANDS;
 
 template <int MAX_ITEMS>
 class AsyncCommandsList : public List<ASYNC_COMMANDS, MAX_ITEMS> {
