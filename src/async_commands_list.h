@@ -23,21 +23,27 @@ public:
     AsyncCommandsList() {}
 
     /**
-     * @brief Get an item from the list based on the event type.
+     * @brief Get a list of items from the list based on the event type.
      *
      * @param eventType The event type to search for.
-     * @return A pointer to the found ASYNC_COMMANDS item, or nullptr if not found.
+     * @param[out] resultItems A pointer to an array of ASYNC_COMMANDS pointers to store the results.
+     * @param[in] maxResults The maximum number of results to store in the resultItems array.
+     * @return The number of items found.
      */
-    ASYNC_COMMANDS *getItem(EVENT_TYPE eventType)
+    size_t getItems(EVENT_TYPE eventType, ASYNC_COMMANDS *resultItems[], size_t maxResults)
     {
-        for (size_t i = 0; i < this->size(); i++)
+        size_t itemCount = 0;
+
+        for (size_t i = 0; i < this->size() && itemCount < maxResults; i++)
         {
             if (this->items[i].event_type == eventType)
             {
-                return &this->items[i];
+                resultItems[itemCount] = &this->items[i];
+                itemCount++;
             }
         }
-        return nullptr; // Event type not found in the list
+
+        return itemCount;
     }
 
     /**
