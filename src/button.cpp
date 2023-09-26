@@ -13,6 +13,9 @@ Button pb_stop(PIN_PB_STOP);
 Button pb_set(PIN_PB_SET);
 Button pb_custom(PIN_PB_CUSTOM);
 
+/**
+ * @brief Initialize buttons used in the mock-up.
+ */
 void button_setup()
 {
     Log.notice(F("button: setup" CR));
@@ -24,12 +27,21 @@ void button_setup()
 
 #endif
 
+/**
+ * @brief Check if a button is pressed.
+ *
+ * @param button A reference to the button to check.
+ * @return true if the button was pressed, false otherwise.
+ */
 bool is_button_pressed(Button &button)
 {
     button.read();
     return button.wasPressed();
 }
 
+/**
+ * @brief Perform button tasks, including event management.
+ */
 void button_task()
 {
     if (is_button_pressed(pb_play_pause))

@@ -17,8 +17,11 @@ typedef enum {
     
     // Application Events
     EVENT_APP_TYPE_FOOT_PRESS           = 0x40,
-    EVENT_APP_TYPE_FOOT_PRESS_RIGHT     = 0x41,
-    EVENT_APP_TYPE_FOOT_PRESS_LEFT      = 0x42,
+    EVENT_APP_TYPE_FOOT_PRESS_LEFT      = 0x41,
+    EVENT_APP_TYPE_FOOT_PRESS_RIGHT     = 0x42,
+    EVENT_APP_TYPE_FOOT_RELEASE         = 0x43,
+    EVENT_APP_TYPE_FOOT_RELEASE_LEFT    = 0x44,
+    EVENT_APP_TYPE_FOOT_RELEASE_RIGHT   = 0x45,
     // Add more workout event types as needed with appropriate hex values
     // ...
 } EVENT_TYPE;

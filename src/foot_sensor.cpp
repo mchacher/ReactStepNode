@@ -5,8 +5,7 @@
 #include "hardware_config.h"
 
 #ifdef MINI_STEP_MOCK_UP
-
-#include <JC_Button.h> 
+#include <JC_Button.h>
 
 Button foot_sensor_left(PIN_PB_FOOT_LEFT);
 Button foot_sensor_right(PIN_PB_FOOT_RIGHT);
@@ -23,16 +22,33 @@ void foot_sensor_setup()
 
 #endif // MINI_STEP_MOCK_UP
 
+enum FootSensorState {
+    FOOT_SENSOR_NONE,
+    FOOT_SENSOR_PRESSED,
+    FOOT_SENSOR_RELEASED
+};
+
 /**
- * @brief Check if a foot sensor is pressed.
+ * @brief Check the foot sensor state (pressed or released).
  *
  * @param sensor A reference to the foot sensor to check.
- * @return true if the foot sensor was pressed, false otherwise.
+ * @return The state of the foot sensor (FOOT_SENSOR_PRESSED, FOOT_SENSOR_RELEASED, or FOOT_SENSOR_NONE).
  */
-bool foot_sensor_pressed(Button& sensor)
+FootSensorState checkFootSensorState(Button& sensor)
 {
     sensor.read();
-    return sensor.wasPressed();
+    
+    if (sensor.wasPressed())
+    {
+        return FOOT_SENSOR_PRESSED;
+    }
+    
+    if (sensor.wasReleased())
+    {
+        return FOOT_SENSOR_RELEASED;
+    }
+    
+    return FOOT_SENSOR_NONE;
 }
 
 /**
@@ -40,49 +56,93 @@ bool foot_sensor_pressed(Button& sensor)
  */
 void foot_sensor_task()
 {
-    // Counter for pending left and right foot press events.
-    static uint8_t pending_event_counter_left = 0;
-    static uint8_t pending_event_counter_right = 0;
+    // Counter for pending left and right foot press and release events.
+    static uint8_t pending_press_left = 0;
+    static uint8_t pending_release_left = 0;
+    static uint8_t pending_press_right = 0;
+    static uint8_t pending_release_right = 0;
+
+    // Check the left foot sensor state
+    FootSensorState leftState = checkFootSensorState(foot_sensor_left);
     
-    if (foot_sensor_pressed(foot_sensor_left))
+    if (leftState == FOOT_SENSOR_PRESSED)
     {
-        Log.noticeln(F("foot_sensor_task: FOOT_PRESS_LEFT detected"));
         // Increment the counter for pending left foot press events.
-        pending_event_counter_left++;
+        pending_press_left++;
     }
-    
-    if (foot_sensor_pressed(foot_sensor_right))
+    else if (leftState == FOOT_SENSOR_RELEASED)
     {
-        Log.noticeln(F("foot_sensor_task: FOOT_PRESS_RIGTH detected"));
-        // Increment the counter for pending right foot press events.
-        pending_event_counter_right++;
+        // Increment the counter for pending left foot release events.
+        pending_release_left++;
     }
+
+    // Check the right foot sensor state
+    FootSensorState rightState = checkFootSensorState(foot_sensor_right);
     
-    if (pending_event_counter_left > 0)
+    if (rightState == FOOT_SENSOR_PRESSED)
+    {
+        // Increment the counter for pending right foot press events.
+        pending_press_right++;
+    }
+    else if (rightState == FOOT_SENSOR_RELEASED)
+    {
+        // Increment the counter for pending right foot release events.
+        pending_release_right++;
+    }
+
+    if (pending_press_left > 0)
     {
         // Attempt to push pending left foot press events to the registry.
         if (event_registry_push(EVENT_APP_TYPE_FOOT_PRESS_LEFT))
         {
             // Decrement the counter when an event is successfully pushed.
-            pending_event_counter_left--;
+            pending_press_left--;
         }
-        else 
+        else
         {
-            Log.noticeln(F("foot_sensor_task: pending FOOT_PRESS_LEFT event %i"), pending_event_counter_left);
+            Log.noticeln(F("foot_sensor_task: pending FOOT_PRESS_LEFT event %i"), pending_press_left);
         }
     }
-    
-    if (pending_event_counter_right > 0)
+
+    if (pending_release_left > 0)
+    {
+        // Attempt to push pending left foot release events to the registry.
+        if (event_registry_push(EVENT_APP_TYPE_FOOT_RELEASE_LEFT))
+        {
+            // Decrement the counter when an event is successfully pushed.
+            pending_release_left--;
+        }
+        else
+        {
+            Log.noticeln(F("foot_sensor_task: pending FOOT_RELEASE_LEFT event %i"), pending_release_left);
+        }
+    }
+
+    if (pending_press_right > 0)
     {
         // Attempt to push pending right foot press events to the registry.
         if (event_registry_push(EVENT_APP_TYPE_FOOT_PRESS_RIGHT))
         {
             // Decrement the counter when an event is successfully pushed.
-            pending_event_counter_right--;
+            pending_press_right--;
         }
-        else 
+        else
         {
-            Log.noticeln(F("foot_sensor_task: pending FOOT_PRESS_RIGHT event %i"), pending_event_counter_right);
+            Log.noticeln(F("foot_sensor_task: pending FOOT_PRESS_RIGHT event %i"), pending_press_right);
+        }
+    }
+
+    if (pending_release_right > 0)
+    {
+        // Attempt to push pending right foot release events to the registry.
+        if (event_registry_push(EVENT_APP_TYPE_FOOT_RELEASE_RIGHT))
+        {
+            // Decrement the counter when an event is successfully pushed.
+            pending_release_right--;
+        }
+        else
+        {
+            Log.noticeln(F("foot_sensor_task: pending FOOT_RELEASE_RIGHT event %i"), pending_release_right);
         }
     }
 }

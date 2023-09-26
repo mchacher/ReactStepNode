@@ -7,32 +7,41 @@
 
 TM1637TinyDisplay display(PIN_TM_1637_CLK, PIN_TM_1637_DIO);
 
-
 static const char *msg = MSG_HELLO;
 static unsigned long expiration_time = 0;
 
+/**
+ * @brief Initialize the display and set its brightness.
+ */
 void display_setup()
 {
     Log.noticeln(F("display: setup"));
     display.begin();
     display.setBrightness(5);
-
 }
 
+/**
+ * @brief Display a message on the TM1637 display.
+ *
+ * @param message The message to display.
+ */
 void display_message(const char *message)
 {
-    
     display.stopAnimation();
     display.clear();
     msg = message;
     display.startStringScroll_P(msg, 300);
-    expiration_time = 0; // msg will be displayed indefinitely
+    expiration_time = 0; // Message will be displayed indefinitely
 }
 
-
+/**
+ * @brief Display a message on the TM1637 display for a specified duration.
+ *
+ * @param message The message to display.
+ * @param duration The duration in seconds for which the message should be displayed.
+ */
 void display_message(const char *message, uint8_t duration)
 {
-    
     display.stopAnimation();
     display.clear();
     msg = message;
@@ -40,12 +49,13 @@ void display_message(const char *message, uint8_t duration)
     expiration_time = millis() + duration * 1000;
 }
 
-
+/**
+ * @brief Perform display tasks, including message scrolling and clearing expired messages.
+ */
 void display_task()
 {
-    // display.showString(msg);
     bool isAnimationRunning = display.Animate();
-    
+
     if (!isAnimationRunning)
     {
         Log.verbose(F("display: Animation not running"));
@@ -58,8 +68,11 @@ void display_task()
     }
 }
 
+/**
+ * @brief Clear the display and reset the current message.
+ */
 void display_clear()
 {
     display.clear();
-    msg= MSG_NONE;
+    msg = MSG_NONE;
 }
