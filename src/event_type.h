@@ -11,6 +11,7 @@ typedef enum {
     EVENT_SYS_TYPE_STOP     = 0x12,
     EVENT_SYS_TYPE_PAUSE    = 0x13,
     EVENT_SYS_TYPE_SET      = 0x14,
+    EVENT_SYS_TYPE_READY    = 0x15,  // product is ready to operate after init phase
     // Add more system event types as needed with appropriate hex values
     // ...
     EVENT_SYS_TYPE_RESET    = 0x3F,
