@@ -17,6 +17,7 @@ void display_setup();
 void display_task();
 void display_message(const char *message);
 void display_message(const char *message, uint8_t duration);
+void display_number(uint16_t num);
 void display_clear();
 
 #endif

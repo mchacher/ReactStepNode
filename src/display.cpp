@@ -9,6 +9,7 @@ TM1637TinyDisplay display(PIN_TM_1637_CLK, PIN_TM_1637_DIO);
 
 static const char *msg = MSG_HELLO;
 static unsigned long expiration_time = 0;
+static bool task_active = false;
 
 /**
  * @brief Initialize the display and set its brightness.
@@ -27,11 +28,15 @@ void display_setup()
  */
 void display_message(const char *message)
 {
-    display.stopAnimation();
+    if (task_active)
+    {
+        display.stopAnimation();
+    }
     display.clear();
     msg = message;
     display.startStringScroll_P(msg, 300);
     expiration_time = 0; // Message will be displayed indefinitely
+    task_active = true;
 }
 
 /**
@@ -42,11 +47,34 @@ void display_message(const char *message)
  */
 void display_message(const char *message, uint8_t duration)
 {
-    display.stopAnimation();
+    if (task_active)
+    {
+        display.stopAnimation();
+    }
     display.clear();
     msg = message;
     display.startStringScroll_P(msg, 300);
     expiration_time = millis() + duration * 1000;
+    task_active = true;
+}
+
+/**
+ * @brief Display a message on the TM1637 display for a specified duration.
+ *
+ * @param message The message to display.
+ * @param duration The duration in seconds for which the message should be displayed.
+ */
+void display_number(uint16_t num)
+{
+    if (task_active)
+    {
+
+        display.stopAnimation();
+        display.clear();
+        msg = MSG_NONE;
+        task_active = false;
+    }
+    display.showNumber((int)num, true);
 }
 
 /**
@@ -54,17 +82,20 @@ void display_message(const char *message, uint8_t duration)
  */
 void display_task()
 {
-    bool isAnimationRunning = display.Animate();
-
-    if (!isAnimationRunning)
+    if (task_active)
     {
-        Log.verbose(F("display: Animation not running"));
-        display.startStringScroll_P(msg, 300);
-    }
+        bool isAnimationRunning = display.Animate();
 
-    if (expiration_time != 0 && millis() > expiration_time)
-    {
-        display_clear();
+        if (!isAnimationRunning)
+        {
+            Log.verbose(F("display: Animation not running"));
+            display.startStringScroll_P(msg, 300);
+        }
+
+        if (expiration_time != 0 && millis() > expiration_time)
+        {
+            display_clear();
+        }
     }
 }
 
@@ -75,4 +106,5 @@ void display_clear()
 {
     display.clear();
     msg = MSG_NONE;
+    task_active = false;
 }
