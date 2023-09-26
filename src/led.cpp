@@ -35,7 +35,7 @@ void led_setup()
 {
   Log.notice(F("led: setup" CR));
   pinMode(LED_BUILTIN, OUTPUT);
-  FastLED.addLeds<WS2812B, PIN_LED_DATA, GRB>(leds, NUM_LEDS);
+  FastLED.addLeds<WS2812B, PIN_LED_DATA, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(20);
   fill_solid(leds, NUM_LEDS, CRGB::Black);
   FastLED.show();
