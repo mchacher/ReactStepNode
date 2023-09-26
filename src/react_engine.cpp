@@ -6,6 +6,7 @@
 #include "event_registry.h"
 #include "react_code.h"
 #include "async_commands_list.h"
+#include "display.h"
 
 uint8_t exampleReactCode[] =
     {
@@ -13,10 +14,12 @@ uint8_t exampleReactCode[] =
         LED_COLOR, 0xFF, 0x00, 0x00, // LED ROUGE
         FOOT_PRESS_LEFT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         FOOT_PRESS_RIGHT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-        TIMER, 0, 10, // Timer 2s
+        FOOT_PRESS_COUNTER_RESET,
+        FOOT_PRESS_COUNTER,
+        TIMER, 0, 5,
         FOOT_PRESS_LEFT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         FOOT_PRESS_RIGHT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-        TIMER, 0, 20,                                                                      // Timer 2s
+        TIMER, 0, 5,                                                                       // Timer 2s
         LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF, // LED BLEUE
         WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,                                        // WAIT EVENT FOOT PRESS
         END};
@@ -28,6 +31,7 @@ static uint8_t waited_app_event = 0;
 static unsigned long waited_app_event_time;
 static RE_STATE re_state = RE_IDLE;
 static uint16_t tick = 0;
+static uint16_t foot_press_counter = 0;
 
 #define MAX_ASYNC_COMMANDS 10
 AsyncCommandsList<MAX_ASYNC_COMMANDS> asyncCommandsList;
@@ -44,6 +48,18 @@ void change_react_device_color(uint32_t *params)
 }
 
 /**
+ * @brief Change the color of the LED based on parameters.
+ *
+ * @param params An array of two color values [0] for pressed and [1] for released states.
+ */
+void update_react_device_foot_press_counter(uint32_t *params)
+{
+    Log.verbose(F("react_engine: update_foot_press_counter"));
+    foot_press_counter++;
+    display_number(foot_press_counter);
+}
+
+/**
  * @brief Handle application events by checking the event registry and executing corresponding commands.
  */
 void handle_application_events()
@@ -52,14 +68,12 @@ void handle_application_events()
     if (event_registry_pop_app_event(app_event))
     {
         Log.noticeln(F("react_engine: handle_application_events"));
-        ASYNC_COMMANDS *item = asyncCommandsList.getItem(app_event.type);
-        if (item != nullptr)
+        const size_t MAX_RESULTS = 10;
+        ASYNC_COMMANDS *resultItems[MAX_RESULTS];
+        size_t itemCount = asyncCommandsList.getItems(app_event.type, resultItems, MAX_RESULTS);
+        for (int i = 0; i < itemCount; i++)
         {
-            item->handler_function(item->params);
-        }
-        else
-        {
-            Log.noticeln(F("react_engine: no async command identified for this event %i"), app_event.type);
+            resultItems[i]->handler_function(resultItems[i]->params);
         }
     }
 }
@@ -85,7 +99,7 @@ void handleEndCommand()
 
 /**
  * @brief Handle the WAIT_EVENT command.
- * 
+ *
  * @param bytecode The bytecode containing the command and its arguments.
  */
 void handleWaitEventCommand(uint8_t *bytecode)
@@ -100,7 +114,7 @@ void handleWaitEventCommand(uint8_t *bytecode)
 
 /**
  * @brief Handle the TIMER command.
- * 
+ *
  * @param bytecode The bytecode containing the command and its arguments.
  */
 void handleTimerCommand(uint8_t *bytecode)
@@ -115,7 +129,7 @@ void handleTimerCommand(uint8_t *bytecode)
 
 /**
  * @brief Handle the LED_COLOR command.
- * 
+ *
  * @param bytecode The bytecode containing the command and its arguments.
  */
 void handleLedColorCommand(uint8_t *bytecode)
@@ -130,7 +144,7 @@ void handleLedColorCommand(uint8_t *bytecode)
 
 /**
  * @brief Handle asynchronous commands with parameters.
- * 
+ *
  * @param commandCode The code of the command.
  * @param eventType The type of event associated with the command.
  * @param handlerFunction The function to handle the command.
@@ -174,13 +188,13 @@ void handleAsyncCommand(uint8_t commandCode, EVENT_TYPE eventType, void (*handle
 
 /**
  * @brief Handle the FOOT_PRESS_COLOR commands.
- * 
+ *
  * @param bytecode The bytecode containing the command and its arguments.
  * @param eventType The event type to use for ASYNC_COMMANDS.
  */
 void handleFootPressColorCommand(uint8_t *bytecode, EVENT_TYPE eventPress, EVENT_TYPE eventRelease)
 {
-    uint8_t command = bytecode[pc -1];
+    uint8_t command = bytecode[pc - 1];
     uint32_t press_color = ((uint32_t)bytecode[pc] << 16);
     press_color |= ((uint32_t)bytecode[pc + 1] << 8);
     press_color |= bytecode[pc + 2];
@@ -198,8 +212,45 @@ void handleFootPressColorCommand(uint8_t *bytecode, EVENT_TYPE eventPress, EVENT
 }
 
 /**
+ * @brief Handle the LED_TRAFFIC_LIGHT command.
+ *
+ * @param bytecode The bytecode containing the command and its arguments.
+ */
+void handleLedTrafficLightCommand(uint8_t *bytecode)
+{
+    Log.noticeln(F("react_engine: Command LED_TRAFFIC_LIGHT"));
+    // Implement the functionality for LED_TRAFFIC_LIGHT command here
+}
+
+/**
+ * @brief Handle the FOOT_PRESS_COUNTER command.
+ *
+ * @param bytecode The bytecode containing the command and its arguments.
+ */
+void handleFootPressCounterCommand(uint8_t *bytecode)
+{
+    uint8_t command = bytecode[pc - 1];
+    Log.noticeln(F("react_engine: Command FOOT_PRESS_COUNTER"));
+    handleAsyncCommand(command, EVENT_APP_TYPE_FOOT_PRESS_LEFT, &update_react_device_foot_press_counter, nullptr);
+    handleAsyncCommand(command, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, &update_react_device_foot_press_counter, nullptr);
+    // Implement the functionality for FOOT_PRESS_COUNTER command here
+}
+
+/**
+ * @brief Handle the FOOT_PRESS_COUNTER_RESET command.
+ *
+ * @param bytecode The bytecode containing the command and its arguments.
+ */
+void handleFootPressCounterResetCommand(uint8_t *bytecode)
+{
+    Log.noticeln(F("react_engine: Command FOOT_PRESS_COUNTER_RESET"));
+    foot_press_counter = 0;
+    display_number(0);
+}
+
+/**
  * @brief Interpret and execute commands with arguments.
- * 
+ *
  * @param bytecode The bytecode containing the command to interpret and execute.
  */
 void interpret_command(uint8_t *bytecode)
@@ -240,6 +291,14 @@ void interpret_command(uint8_t *bytecode)
         Log.noticeln(F("react_engine: Command FOOT_PRESS_LEFT_COLOR"));
         handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_LEFT, EVENT_APP_TYPE_FOOT_RELEASE_LEFT);
         handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, EVENT_APP_TYPE_FOOT_RELEASE_RIGHT);
+        break;
+    case FOOT_PRESS_COUNTER:
+        handleFootPressCounterCommand(bytecode);
+        break;
+    case FOOT_PRESS_COUNTER_RESET:
+        handleFootPressCounterResetCommand(bytecode);
+        break;
+
     default:
         Log.noticeln(F("react_engine: Command UNKNOWN COMMAND"));
         // Unknown command
