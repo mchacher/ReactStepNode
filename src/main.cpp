@@ -80,10 +80,11 @@ void state_machine_task()
         task_react_engine.enable();
         display_message(MSG_GO, 2);
         break;
-      case EVENT_SYS_TYPE_SET:
+      case EVENT_SYS_TYPE_SET_LP:
         state_machine_switch_state(SET);
         Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
-        display_message(MSG_SET,2);
+        display_number(rf_get_node_id());
+        display_blink_numbers(true);
         break;
       default:
         break;
@@ -115,11 +116,17 @@ void state_machine_task()
       // Handle SETTING state
       switch (event.type)
       {
-      case EVENT_SYS_TYPE_SET:
-        Log.noticeln(F("state_machine_task: SET event, switching to INIT state"));
+      case EVENT_SYS_TYPE_SET_LP:
+        Log.verboseln(F("state_machine_task: SET event, switching to READY state"));
+        display_blink_numbers(false);
         state_machine_switch_state(READY);
-        display_push_message_to_queue(MSG_IDLE, 0);
+        display_message(MSG_IDLE);
         break;
+      case EVENT_SYS_TYPE_SET_SP:
+        Log.verboseln(F("state_machine_task: SET_SP event"));
+        rf_increment_node_id();
+        display_number(rf_get_node_id());
+
       default:
         break;
       }
@@ -147,7 +154,7 @@ void setup()
   }
   Log.begin(LOG_LEVEL_NOTICE, &Serial);
 #ifdef MINI_STEP_MOCK_UP
-  Log.notice(F("Main: Starting Mini Step Mockup with ID: %d" CR), NODE_ID);
+  Log.notice(F("Main: Starting Mini Step Mockup with ID: %d" CR), rf_get_node_id());
 #elif
   Log.notice(F("Main: Starting React Step Node with ID: %d" CR), NODE_ID);
 #endif

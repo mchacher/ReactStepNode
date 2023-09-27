@@ -10,6 +10,17 @@ RF24Network network(radio);
 RF24Mesh mesh(radio, network);
 
 uint32_t displayTimer = 0;
+static uint8_t node_id = 2;
+
+uint8_t rf_get_node_id()
+{
+  return node_id;
+}
+
+void rf_increment_node_id()
+{
+  node_id = (node_id % MAX_NODE_ID) + 1;
+}
 
 void rf_task()
 {
@@ -69,7 +80,7 @@ void rf_setup()
   }
 
   // Set the nodeID manually
-  mesh.setNodeID(NODE_ID);
+  mesh.setNodeID(node_id);
 
   // Set the PA Level to MIN and disable LNA for testing & power supply related issues
   radio.begin();
