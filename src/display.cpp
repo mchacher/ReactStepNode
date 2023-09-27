@@ -82,6 +82,7 @@ void display_push_message_to_queue(const char *message, uint8_t duration)
     qmsg.msg = message;
     qmsg.duration = duration;
     messages_queue.push(qmsg);
+    task_active = true;
 }
 
 /**

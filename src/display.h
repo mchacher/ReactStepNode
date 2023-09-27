@@ -10,7 +10,7 @@ const PROGMEM char MSG_STOP[] = "STOP";
 const PROGMEM char MSG_PAUSE[] = "PAUSE";
 const PROGMEM char MSG_GO[] = " GO ";
 const PROGMEM char MSG_ERROR[] = "ERROR";
-const PROGMEM char MSG_SET[] = "SET";
+const PROGMEM char MSG_SET[] = " SET";
 const PROGMEM char MSG_IDLE[] = "----";
 
 struct QueuedMessage
