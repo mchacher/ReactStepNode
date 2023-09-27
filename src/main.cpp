@@ -28,12 +28,6 @@ Task task_display(TASK_CYCLE_MEDIUM, TASK_FOREVER, &display_task);
 Task task_button(TASK_CYCLE_FAST, TASK_FOREVER, &button_task);
 Task task_state_machine(TASK_CYCLE_MEDIUM, TASK_FOREVER, &state_machine_task);
 
-#include "Arduino.h"
-#include "ArduinoLog.h"
-#include "state_machine.h"
-#include "event_type.h"
-#include "event_registry.h"
-
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
 
