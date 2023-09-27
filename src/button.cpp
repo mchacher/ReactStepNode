@@ -27,16 +27,33 @@ void button_setup()
 
 #endif
 
-/**
- * @brief Check if a button is pressed.
- *
- * @param button A reference to the button to check.
- * @return true if the button was pressed, false otherwise.
- */
-bool is_button_pressed(Button &button)
+ButtonEvent button_read(Button &button)
 {
+    static bool long_press = false;
     button.read();
-    return button.wasPressed();
+    ButtonEvent be = BUTTON_NO_EVENT;
+    if (button.pressedFor(1000))
+    {
+        if (long_press == false)
+        {
+            be = BUTTON_LONG_PRESS;
+        }
+        long_press = true;
+        Log.verboseln("button: long press detected");
+    }
+    else if (button.wasReleased())
+    {
+        if (long_press)
+        {
+            long_press = false;
+        }
+        else
+        {
+            Log.verboseln("button: short press detected");
+            be = BUTTON_PRESS;
+        }
+    }
+    return be;
 }
 
 /**
@@ -44,25 +61,30 @@ bool is_button_pressed(Button &button)
  */
 void button_task()
 {
-    if (is_button_pressed(pb_play_pause))
+    if (button_read(pb_play_pause) != BUTTON_NO_EVENT)
     {
         event_registry_push(EVENT_SYS_TYPE_START);
         Log.noticeln(F("button task: PLAY PAUSE button pressed"));
     }
 
-    if (is_button_pressed(pb_stop))
+    if (button_read(pb_stop) != BUTTON_NO_EVENT)
     {
         event_registry_push(EVENT_SYS_TYPE_STOP);
         Log.noticeln(F("button task: STOP button pressed"));
     }
-
-    if (is_button_pressed(pb_set))
+    ButtonEvent e = button_read(pb_set);
+    if (e == BUTTON_LONG_PRESS)
     {
-        event_registry_push(EVENT_SYS_TYPE_SET);
-        Log.noticeln(F("button task: SET button pressed"));
+        event_registry_push(EVENT_SYS_TYPE_SET_LP);
+        Log.noticeln(F("button task: SET_LP button long pressed"));
+    }
+    else if (e == BUTTON_PRESS)
+    {
+        event_registry_push(EVENT_SYS_TYPE_SET_SP);
+        Log.noticeln(F("button task: SET_SP button short pressed"));
     }
 
-    if (is_button_pressed(pb_custom))
+    if (button_read(pb_custom) != BUTTON_NO_EVENT)
     {
         Log.noticeln(F("button task: CUSTOM button pressed"));
     }
