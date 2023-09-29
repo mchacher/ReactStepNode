@@ -4,7 +4,7 @@
 #include "event_type.h"
 
 // Command codes
-enum {
+typedef enum {
     START = 0x80,
     END = 0x81,
     WAIT_EVENT = 0x82,
@@ -17,7 +17,12 @@ enum {
     FOOT_PRESS_RIGHT_COLOR = 0xB2,
     FOOT_PRESS_COUNTER = 0xB3,
     FOOT_PRESS_COUNTER_RESET = 0xB4
-};
+} COMMANDS;
+
+typedef enum {
+    TRUE = 0x20,
+    FALSE = 0x21
+} ARGS;
 
 // Argument codes
 #define COLOR_WHITE 0xFFFFFF
