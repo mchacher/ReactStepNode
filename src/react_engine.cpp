@@ -12,14 +12,16 @@ uint8_t exampleReactCode[] =
     {
         START,
         LED_COLOR, 0xFF, 0x00, 0x00, // LED ROUGE
+        TIMER, 0, 5, ARGS::TRUE,
         FOOT_PRESS_LEFT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         FOOT_PRESS_RIGHT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         FOOT_PRESS_COUNTER_RESET,
-        FOOT_PRESS_COUNTER,
-        TIMER, 0, 5,
+        FOOT_PRESS_COUNTER, ARGS::FALSE,
+        TIMER, 0, 5, ARGS::FALSE,
         FOOT_PRESS_LEFT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         FOOT_PRESS_RIGHT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-        TIMER, 0, 5,                                                                       // Timer 2s
+        FOOT_PRESS_COUNTER, ARGS::TRUE,
+        TIMER, 0, 5, ARGS::FALSE,                                                                      // Timer 2s
         LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF, // LED BLEUE
         WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,                                        // WAIT EVENT FOOT PRESS
         END};
@@ -32,6 +34,7 @@ static unsigned long waited_app_event_time;
 static RE_STATE re_state = RE_IDLE;
 static uint16_t tick = 0;
 static uint16_t foot_press_counter = 0;
+static bool timer_display = false;
 
 #define MAX_ASYNC_COMMANDS 10
 AsyncCommandsList<MAX_ASYNC_COMMANDS> asyncCommandsList;
@@ -56,7 +59,10 @@ void update_react_device_foot_press_counter(uint32_t *params)
 {
     Log.verbose(F("react_engine: update_foot_press_counter"));
     foot_press_counter++;
-    display_number(foot_press_counter);
+    if (params[0])
+    {
+        display_number(foot_press_counter);
+    }
 }
 
 /**
@@ -84,6 +90,7 @@ void handle_application_events()
 void handleStartCommand()
 {
     // Handle START command
+    Log.noticeln(F("---------------------------"));
     Log.noticeln(F("react_engine: Command START"));
 }
 
@@ -110,21 +117,6 @@ void handleWaitEventCommand(uint8_t *bytecode)
     pc = pc + 1;
     Log.noticeln(F("react_engine: Command WAIT_EVENT, event: %i"), waited_app_event);
     event_registry_enable_app_event();
-}
-
-/**
- * @brief Handle the TIMER command.
- *
- * @param bytecode The bytecode containing the command and its arguments.
- */
-void handleTimerCommand(uint8_t *bytecode)
-{
-    // Handle TIMER command with args
-    Log.noticeln(F("react_engine: Command TIMER %l"), millis());
-    timer = (uint16_t)(bytecode[pc] << 8);
-    timer |= bytecode[pc + 1];
-    pc = pc + 2;
-    re_state = RE_HOLD_TIMER_ENABLE;
 }
 
 /**
@@ -162,7 +154,6 @@ void handleAsyncCommand(uint8_t commandCode, EVENT_TYPE eventType, void (*handle
         ac->active = true;
         ac->event_type = eventType;
         ac->handler_function = handlerFunction;
-        Log.noticeln("handleAsyncCommand: color = %lu", params[0]);
         // Copy the values from params to ac->params
         for (int i = 0; i < 2; i++)
         {
@@ -223,6 +214,33 @@ void handleLedTrafficLightCommand(uint8_t *bytecode)
 }
 
 /**
+ * @brief Handle the TIMER command.
+ *
+ * @param bytecode The bytecode containing the command and its arguments.
+ */
+void handleTimerCommand(uint8_t *bytecode)
+{
+    // Handle TIMER command with args
+    Log.noticeln(F("react_engine: Command TIMER %l"), millis());
+    timer = (uint16_t)(bytecode[pc] << 8);
+    timer |= bytecode[pc + 1]; 
+    timer_display = (bytecode[pc + 2] == ARGS::TRUE) ? true : false;
+    pc = pc + 3;
+    re_state = RE_HOLD_TIMER_ENABLE;
+    if (timer_display)
+    {
+        display_number(timer);
+        // removing all other display 
+        ASYNC_COMMANDS *ac = asyncCommandsList.getItem(EVENT_APP_TYPE_FOOT_PRESS_LEFT);
+        if (ac != nullptr)
+        {
+            ac->active = false;
+            display_clear();
+        }
+    }
+}
+
+/**
  * @brief Handle the FOOT_PRESS_COUNTER command.
  *
  * @param bytecode The bytecode containing the command and its arguments.
@@ -231,8 +249,17 @@ void handleFootPressCounterCommand(uint8_t *bytecode)
 {
     uint8_t command = bytecode[pc - 1];
     Log.noticeln(F("react_engine: Command FOOT_PRESS_COUNTER"));
-    handleAsyncCommand(command, EVENT_APP_TYPE_FOOT_PRESS_LEFT, &update_react_device_foot_press_counter, nullptr);
-    handleAsyncCommand(command, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, &update_react_device_foot_press_counter, nullptr);
+    bool enable = (bytecode[pc] == ARGS::TRUE) ? true : false;
+    pc = pc +1;
+    uint32_t params[2] = {enable, 0};
+    handleAsyncCommand(command, EVENT_APP_TYPE_FOOT_PRESS_LEFT, &update_react_device_foot_press_counter, params);
+    handleAsyncCommand(command, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, &update_react_device_foot_press_counter, params);
+    timer_display =false;
+    display_clear();
+    if (enable == true)
+    {
+        display_number(foot_press_counter);
+    }
     // Implement the functionality for FOOT_PRESS_COUNTER command here
 }
 
@@ -300,7 +327,7 @@ void interpret_command(uint8_t *bytecode)
         break;
 
     default:
-        Log.noticeln(F("react_engine: Command UNKNOWN COMMAND"));
+        Log.noticeln(F("react_engine: Command UNKNOWN COMMAND: %i"), command);
         // Unknown command
         break;
     }
@@ -357,6 +384,10 @@ void react_engine_task()
         if ((tick * REACT_ENGINE_CYCLE_TIME) == 1000) // 1s
         {
             timer = timer - 1;
+            if (timer_display)
+            {
+                display_number(timer);
+            }
             if (timer == 0)
             {
                 re_state = RE_RUN;
