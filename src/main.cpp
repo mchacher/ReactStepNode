@@ -20,6 +20,7 @@ Scheduler runner;
 
 // Tasks
 Task task_led(TASK_CYCLE_FAST, TASK_FOREVER, &led_task);
+Task task_rf(TASK_CYCLE_FAST, TASK_FOREVER, &rf_task);
 Task task_react_engine(REACT_ENGINE_CYCLE_TIME, TASK_FOREVER, &react_engine_task);
 Task task_event_registry(TASK_CYCLE_SLOW, TASK_FOREVER, &event_registry_task);
 Task task_foot_sensor(5, TASK_FOREVER, &foot_sensor_task);
@@ -196,6 +197,10 @@ void setup()
   display_setup();
   runner.addTask(task_display);
   task_display.enable();
+
+  // rf_setup();
+  // runner.addTask(task_rf);
+  // task_rf.enable();
 
   event_registry_push(EVENT_SYS_TYPE_READY);
 }
