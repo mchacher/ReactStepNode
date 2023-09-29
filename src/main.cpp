@@ -21,7 +21,6 @@ Scheduler runner;
 // Tasks
 Task task_led(TASK_CYCLE_FAST, TASK_FOREVER, &led_task);
 Task task_react_engine(REACT_ENGINE_CYCLE_TIME, TASK_FOREVER, &react_engine_task);
-// extern Task task_react_engine;
 Task task_event_registry(TASK_CYCLE_SLOW, TASK_FOREVER, &event_registry_task);
 Task task_foot_sensor(5, TASK_FOREVER, &foot_sensor_task);
 Task task_display(TASK_CYCLE_MEDIUM, TASK_FOREVER, &display_task);
@@ -192,7 +191,6 @@ void setup()
   // Create and Launch React Engine task
   react_engine_setup();
   runner.addTask(task_react_engine);
-  // task_react_engine.enable();
 
   // Create and Launch Display task
   display_setup();
