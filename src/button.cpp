@@ -8,6 +8,8 @@
 
 #ifdef MINI_STEP_MOCK_UP
 
+#define LONG_PRESS_TIME 1000 // Long press time threshold in milliseconds (1s)
+
 Button pb_play_pause(PIN_PB_PLAY_PAUSE);
 Button pb_stop(PIN_PB_STOP);
 Button pb_set(PIN_PB_SET);
@@ -27,12 +29,18 @@ void button_setup()
 
 #endif
 
+/**
+ * @brief Read and handle button events.
+ *
+ * @param button The button to read.
+ * @return The type of button event (short press, long press, or no event).
+ */
 ButtonEvent button_read(Button &button)
 {
     static bool long_press = false;
     button.read();
     ButtonEvent be = BUTTON_NO_EVENT;
-    if (button.pressedFor(1000))
+    if (button.pressedFor(LONG_PRESS_TIME))
     {
         if (long_press == false)
         {
