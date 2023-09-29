@@ -8,13 +8,13 @@
 #define PIN_TM_1637_DIO     12
 
 // Foot Sensor
-#define PIN_PB_FOOT_LEFT    7
+#define PIN_PB_FOOT_LEFT    3
 #define PIN_PB_FOOT_RIGHT   6
 
 // push buttons
 #define PIN_PB_SET          5
 #define PIN_PB_STOP         9
-#define PIN_PB_CUSTOM       8
+#define PIN_PB_CUSTOM       2
 #define PIN_PB_PLAY_PAUSE   10
 
 // #leds are in the strip
