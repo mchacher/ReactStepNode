@@ -11,6 +11,9 @@
 #define PIN_PB_FOOT_LEFT    14
 #define PIN_PB_FOOT_RIGHT   15
 
+// Microphone
+#define MIC_PIN             A2
+
 // push buttons
 #define PIN_PB_SET          5
 #define PIN_PB_STOP         9
