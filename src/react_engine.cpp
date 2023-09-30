@@ -11,17 +11,21 @@
 uint8_t exampleReactCode[] =
     {
         START,
-        LED_COLOR, 0xFF, 0x00, 0x00, // LED ROUGE
-        //TIMER, 0, 1, ARGS::TRUE,
+        LED_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
+        TIMER, 0, 3, ARGS::TRUE,
+        LED_EFFECT, LED_EFFECTS::EFFECT_MUSIC,
+        TIMER, 0, 5, ARGS::TRUE,
+        LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
+        WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_RIGHT,
         FOOT_PRESS_LEFT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         FOOT_PRESS_RIGHT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         FOOT_PRESS_COUNTER_RESET,
         FOOT_PRESS_COUNTER, ARGS::TRUE,
-        TIMER, 0, 10, ARGS::FALSE,
-        // FOOT_PRESS_LEFT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-        // FOOT_PRESS_RIGHT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-        // FOOT_PRESS_COUNTER, ARGS::TRUE,
-        TIMER, 0, 10, ARGS::TRUE,
+        TIMER, 0, 5, ARGS::FALSE,
+        FOOT_PRESS_LEFT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+        FOOT_PRESS_RIGHT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+        FOOT_PRESS_COUNTER, ARGS::TRUE,
+        TIMER, 0, 5, ARGS::TRUE,
         LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF,
         WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
         END};
@@ -288,6 +292,21 @@ void handleFootPressCounterResetCommand(uint8_t *bytecode)
     display_number(0);
 }
 
+
+/**
+ * @brief Handle the LED_EFFECT command.
+ *
+ * @param bytecode The bytecode containing the command and its arguments.
+ */
+void handleLedEffectCommand(uint8_t *bytecode)
+{
+    Log.noticeln(F("react_engine: Command LED_EFFECT"));
+    uint8_t effect = bytecode[pc];
+    pc = pc +1;
+    led_set_effect((LED_EFFECTS) effect);
+}
+
+
 /**
  * @brief Interpret and execute commands with arguments.
  *
@@ -337,7 +356,9 @@ void interpret_command(uint8_t *bytecode)
     case FOOT_PRESS_COUNTER_RESET:
         handleFootPressCounterResetCommand(bytecode);
         break;
-
+    case LED_EFFECT:
+        handleLedEffectCommand(bytecode);
+        break;
     default:
         Log.noticeln(F("react_engine: Command UNKNOWN COMMAND: %i"), command);
         // Unknown command

@@ -12,6 +12,7 @@ typedef enum {
     SEND_EVENT = 0x84,
     LED_COLOR = 0xA0,
     LED_TRAFFIC_LIGHT = 0xA1,
+    LED_EFFECT = 0xA2,
     FOOT_PRESS_COLOR = 0xB0,
     FOOT_PRESS_LEFT_COLOR = 0xB1,
     FOOT_PRESS_RIGHT_COLOR = 0xB2,
@@ -21,7 +22,9 @@ typedef enum {
 
 typedef enum {
     TRUE = 0x20,
-    FALSE = 0x21
+    FALSE = 0x21,
 } ARGS;
+
+
 
 #endif

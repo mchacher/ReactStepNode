@@ -11,6 +11,7 @@
 #include "button.h"
 #include "hardware_config.h"
 #include "react_scheduler.h"
+#include "mic.h"
 
 ReactScheduler runner;
 
@@ -63,7 +64,7 @@ void state_machine_task()
         Log.noticeln(F("state_machine_task: READY event, switching to READY state"));
         display_message(MSG_HELLO, 2);
         display_push_message_to_queue(MSG_IDLE, 0);
-        led_set_effect(LED_EFFECT::EFFECT_RAINBOW);
+        led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
       }
       break;
     case READY:
@@ -97,7 +98,7 @@ void state_machine_task()
         task_react_engine.disable();
         react_engine_stop();
         display_message(MSG_STOP);
-        led_set_effect(LED_EFFECT::EFFECT_RAINBOW);
+        led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
         break;
       case EVENT_SYS_TYPE_START:
         state_machine_switch_state(READY);
@@ -105,7 +106,7 @@ void state_machine_task()
         task_react_engine.disable();
         react_engine_pause();
         display_message(MSG_PAUSE);
-        led_set_effect(LED_EFFECT::EFFECT_RAINBOW);
+        led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
         break;
       }
       break;
@@ -119,7 +120,7 @@ void state_machine_task()
         display_blink_numbers(false);
         state_machine_switch_state(READY);
         display_message(MSG_IDLE);
-        led_set_effect(LED_EFFECT::EFFECT_RAINBOW);
+        led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
         break;
       case EVENT_SYS_TYPE_SET_SP:
         Log.verboseln(F("state_machine_task: SET_SP event"));
@@ -206,6 +207,8 @@ void setup()
   // rf_setup();
   // runner.addTask(task_rf);
   // task_rf.enable();
+
+  setup_mic();
 
   event_registry_push(EVENT_SYS_TYPE_READY);
 }
