@@ -1,13 +1,17 @@
 #include <Arduino.h>
+#include <WS2812.h>
 #include "led.h"
-#include <FastLED.h>
 #include "ArduinoLog.h"
 #include "hardware_config.h"
 
-// This is an array of leds.  One item for each led in your strip.
-CRGB leds[NUM_LEDS];
+// use the cRGB struct hsv method
+#define USE_HSV
 
-uint32_t current_color = CRGB::Black; // black
+WS2812 strip_led(NUM_LEDS);
+
+uint32_t current_color = 0x000000; // black
+
+LED_EFFECT current_effect = LED_EFFECT::EFFECT_NONE;
 
 /**
  * @brief Set the LED strip to a specific color.
@@ -17,6 +21,23 @@ uint32_t current_color = CRGB::Black; // black
 void led_set_color(uint32_t color)
 {
   current_color = color;
+  current_effect = LED_EFFECT::EFFECT_NONE;
+}
+
+void led_set_effect(LED_EFFECT effect)
+{
+  current_effect = effect;
+}
+
+void effect_rainbow()
+{
+  static byte t;
+  for (int i = 0; i < NUM_LEDS; i++)
+  {
+    byte hue = NUM_LEDS + t;
+    strip_led.setHSV(i, hue, 255, 255);
+  }
+  t++;
 }
 
 /**
@@ -24,19 +45,35 @@ void led_set_color(uint32_t color)
  */
 void led_task()
 {
-  fill_solid(leds, NUM_LEDS, current_color);
-  FastLED.show();
+  if (current_effect == LED_EFFECT::EFFECT_NONE)
+  {
+    for (int i = 0; i < NUM_LEDS; i++)
+    {
+      strip_led.setRGB(i, current_color);
+    }
+  }
+  else
+  {
+    switch (current_effect)
+    {
+    case LED_EFFECT::EFFECT_NONE:
+      break;
+    case LED_EFFECT::EFFECT_RAINBOW:
+      effect_rainbow();
+      break;
+    default:
+      break;
+    }
+  }
+  strip_led.sync();
 }
 
 /**
- * @brief Initialize the LED module.
+ * @brief Initialize the strip_led module.
  */
 void led_setup()
 {
   Log.notice(F("led: setup" CR));
-  pinMode(LED_BUILTIN, OUTPUT);
-  FastLED.addLeds<WS2812B, PIN_LED_DATA, GRB>(leds, NUM_LEDS).setCorrection(TypicalLEDStrip);
-  FastLED.setBrightness(20);
-  fill_solid(leds, NUM_LEDS, CRGB::Black);
-  FastLED.show();
+  strip_led.setOutput(PIN_LED_DATA);
+  strip_led.setBrightness(64);
 }

@@ -24,14 +24,4 @@ typedef enum {
     FALSE = 0x21
 } ARGS;
 
-// Argument codes
-#define COLOR_WHITE 0xFFFFFF
-#define COLOR_BLACK 0x000000
-#define COLOR_RED 0xFF0000
-#define COLOR_GREEN 0x008000
-#define COLOR_BLUE 0x0000FF
-#define COLOR_PINK 0xFF20CC     // original color from FAST LED not working ... 0xFFC0CB
-#define COLOR_ORANGE 0xFFA500
-#define COLOR_YELLOW 0xFFFF00
-
 #endif

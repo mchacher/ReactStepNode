@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 
+#define MAX_TASKS 10
 
 class Task {
 public:
@@ -42,7 +43,7 @@ public:
 
 private:
   unsigned long previousMillis;
-  Task* tasks[10]; // You can adjust the maximum number of tasks as needed
+  Task* tasks[MAX_TASKS]; // You can adjust the maximum number of tasks as needed
   int taskCount;
 };
 
