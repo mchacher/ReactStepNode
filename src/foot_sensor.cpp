@@ -40,11 +40,13 @@ FootSensorState checkFootSensorState(Button& sensor)
     
     if (sensor.wasPressed())
     {
+        Log.verboseln(F("foot_sensor_task: FOOT_SENSOR_PRESSED"));
         return FOOT_SENSOR_PRESSED;
     }
     
     if (sensor.wasReleased())
     {
+        Log.verboseln(F("foot_sensor_task: FOOT_SENSOR_RELEASED"));
         return FOOT_SENSOR_RELEASED;
     }
     
