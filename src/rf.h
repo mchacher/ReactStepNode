@@ -3,6 +3,7 @@
 #define RF_H
 
 #define MAX_NODE_ID 99
+#define MESH_NOMASTER
 struct payload_t
 {
   unsigned long ms;
