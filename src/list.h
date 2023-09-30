@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include "ArduinoLog.h"
 
 /**
  * @brief A simple list (array) with a fixed maximum number of items.
@@ -20,6 +21,7 @@ public:
     bool add(const T &item) {
         if (itemCount < MAX_ITEMS) {
             items[itemCount++] = item;
+            Log.verboseln(F("list: adding item, total itemCount %i"), itemCount);
             return true; // Added successfully
         }
         return false; // List is full
