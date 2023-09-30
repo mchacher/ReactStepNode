@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <ArduinoLog.h>
-#include <TaskScheduler.h>
 #include <printf.h>
 #include "rf.h"
 #include "state_machine.h"
@@ -11,22 +10,23 @@
 #include "display.h"
 #include "button.h"
 #include "hardware_config.h"
+#include "react_scheduler.h"
 
-Scheduler runner;
+ReactScheduler runner;
 
 #define TASK_CYCLE_FAST 20
 #define TASK_CYCLE_MEDIUM 100
 #define TASK_CYCLE_SLOW 250
 
 // Tasks
-Task task_led(TASK_CYCLE_FAST, TASK_FOREVER, &led_task);
-Task task_rf(TASK_CYCLE_FAST, TASK_FOREVER, &rf_task);
-Task task_react_engine(REACT_ENGINE_CYCLE_TIME, TASK_FOREVER, &react_engine_task);
-Task task_event_registry(TASK_CYCLE_SLOW, TASK_FOREVER, &event_registry_task);
-Task task_foot_sensor(5, TASK_FOREVER, &foot_sensor_task);
-Task task_display(TASK_CYCLE_MEDIUM, TASK_FOREVER, &display_task);
-Task task_button(TASK_CYCLE_FAST, TASK_FOREVER, &button_task);
-Task task_state_machine(TASK_CYCLE_MEDIUM, TASK_FOREVER, &state_machine_task);
+Task task_led(TASK_CYCLE_FAST, &led_task);
+Task task_rf(TASK_CYCLE_FAST, &rf_task);
+Task task_react_engine(REACT_ENGINE_CYCLE_TIME, &react_engine_task);
+Task task_event_registry(TASK_CYCLE_SLOW, &event_registry_task);
+Task task_foot_sensor(TASK_CYCLE_FAST, &foot_sensor_task);
+Task task_display(TASK_CYCLE_MEDIUM, &display_task);
+Task task_button(TASK_CYCLE_FAST, &button_task);
+Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
 
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
