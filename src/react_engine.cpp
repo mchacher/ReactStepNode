@@ -12,18 +12,18 @@ uint8_t exampleReactCode[] =
     {
         START,
         LED_COLOR, 0xFF, 0x00, 0x00, // LED ROUGE
-        TIMER, 0, 5, ARGS::TRUE,
+        //TIMER, 0, 1, ARGS::TRUE,
         FOOT_PRESS_LEFT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
         FOOT_PRESS_RIGHT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-        FOOT_PRESS_COUNTER_RESET,
-        FOOT_PRESS_COUNTER, ARGS::FALSE,
-        TIMER, 0, 5, ARGS::FALSE,
-        FOOT_PRESS_LEFT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-        FOOT_PRESS_RIGHT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-        FOOT_PRESS_COUNTER, ARGS::TRUE,
-        TIMER, 0, 5, ARGS::FALSE,                                                                      // Timer 2s
-        LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF, // LED BLEUE
-        WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,                                        // WAIT EVENT FOOT PRESS
+        // FOOT_PRESS_COUNTER_RESET,
+        // FOOT_PRESS_COUNTER, ARGS::TRUE,
+        // TIMER, 0, 10, ARGS::FALSE,
+        // FOOT_PRESS_LEFT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+        // FOOT_PRESS_RIGHT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+        // FOOT_PRESS_COUNTER, ARGS::TRUE,
+        TIMER, 0, 10, ARGS::TRUE,
+        LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF,
+        WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
         END};
 
 static int pc = 0;
@@ -46,7 +46,7 @@ AsyncCommandsList<MAX_ASYNC_COMMANDS> asyncCommandsList;
  */
 void change_react_device_color(uint32_t *params)
 {
-    Log.verbose(F("react_engine: change_react_device_color"));
+    Log.noticeln(F("react_engine: change_react_device_color"));
     led_set_color(params[0]);
 }
 
@@ -57,7 +57,7 @@ void change_react_device_color(uint32_t *params)
  */
 void update_react_device_foot_press_counter(uint32_t *params)
 {
-    Log.verbose(F("react_engine: update_foot_press_counter"));
+    Log.verboseln(F("react_engine: update_foot_press_counter"));
     foot_press_counter++;
     if (params[0])
     {
@@ -73,13 +73,18 @@ void handle_application_events()
     EVENT app_event;
     if (event_registry_pop_app_event(app_event))
     {
-        Log.noticeln(F("react_engine: handle_application_events"));
+        Log.noticeln(F("react_engine: handle_application_events for event %i"), app_event.type);
         const size_t MAX_RESULTS = 10;
         ASYNC_COMMANDS *resultItems[MAX_RESULTS];
-        size_t itemCount = asyncCommandsList.getItems(app_event.type, resultItems, MAX_RESULTS);
-        for (int i = 0; i < itemCount; i++)
+        size_t itemCount = asyncCommandsList.getItemsByEventType((EVENT_TYPE)app_event.type, resultItems, MAX_RESULTS);
+        Log.noticeln(F("react_engine: ---- itemCount: %i"), itemCount);
+        for (size_t i = 0; i < itemCount; i++)
         {
-            resultItems[i]->handler_function(resultItems[i]->params);
+            
+            if (resultItems[i]->active == true)
+            {
+                resultItems[i]->handler_function(resultItems[i]->params);
+            }
         }
     }
 }
@@ -185,6 +190,7 @@ void handleAsyncCommand(uint8_t commandCode, EVENT_TYPE eventType, void (*handle
  */
 void handleFootPressColorCommand(uint8_t *bytecode, EVENT_TYPE eventPress, EVENT_TYPE eventRelease)
 {
+    Log.noticeln(F("react_engine: Command FOOT_PRESS_LEFT_COLOR"));
     uint8_t command = bytecode[pc - 1];
     uint32_t press_color = ((uint32_t)bytecode[pc] << 16);
     press_color |= ((uint32_t)bytecode[pc + 1] << 8);
@@ -229,14 +235,22 @@ void handleTimerCommand(uint8_t *bytecode)
     re_state = RE_HOLD_TIMER_ENABLE;
     if (timer_display)
     {
-        display_number(timer);
-        // removing all other display 
-        ASYNC_COMMANDS *ac = asyncCommandsList.getItem(EVENT_APP_TYPE_FOOT_PRESS_LEFT);
-        if (ac != nullptr)
+        // removing all other display
+        const size_t MAX_RESULTS = 10;
+        ASYNC_COMMANDS *resultItems[MAX_RESULTS];
+        size_t itemCount = asyncCommandsList.getItemsByCommandCode(COMMANDS::FOOT_PRESS_COUNTER, resultItems, MAX_RESULTS);
+        Log.noticeln(F(" ---- itemCount: %i"), itemCount);
+        for (size_t i = 0; i < itemCount; i++)
         {
-            ac->active = false;
-            display_clear();
+            resultItems[i]->active = false;
         }
+        display_number(timer);
+        // ASYNC_COMMANDS *ac = asyncCommandsList.getItem(EVENT_APP_TYPE_FOOT_PRESS_LEFT);
+        // if (ac != nullptr)
+        // {
+        //     ac->active = false;
+        //     display_clear();
+        // }
     }
 }
 
@@ -247,13 +261,12 @@ void handleTimerCommand(uint8_t *bytecode)
  */
 void handleFootPressCounterCommand(uint8_t *bytecode)
 {
-    uint8_t command = bytecode[pc - 1];
     Log.noticeln(F("react_engine: Command FOOT_PRESS_COUNTER"));
     bool enable = (bytecode[pc] == ARGS::TRUE) ? true : false;
     pc = pc +1;
     uint32_t params[2] = {enable, 0};
-    handleAsyncCommand(command, EVENT_APP_TYPE_FOOT_PRESS_LEFT, &update_react_device_foot_press_counter, params);
-    handleAsyncCommand(command, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, &update_react_device_foot_press_counter, params);
+    handleAsyncCommand(COMMANDS::FOOT_PRESS_COUNTER, EVENT_APP_TYPE_FOOT_PRESS_LEFT, &update_react_device_foot_press_counter, params);
+    handleAsyncCommand(COMMANDS::FOOT_PRESS_COUNTER, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, &update_react_device_foot_press_counter, params);
     timer_display =false;
     display_clear();
     if (enable == true)
@@ -307,7 +320,6 @@ void interpret_command(uint8_t *bytecode)
         handleLedColorCommand(bytecode);
         break;
     case FOOT_PRESS_LEFT_COLOR:
-        Log.noticeln(F("react_engine: Command FOOT_PRESS_LEFT_COLOR"));
         handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_LEFT, EVENT_APP_TYPE_FOOT_RELEASE_LEFT);
         break;
     case FOOT_PRESS_RIGHT_COLOR:
