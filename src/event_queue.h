@@ -7,7 +7,7 @@
 #include "ArduinoLog.h"
 
 // Define the maximum size for the event queue
-#define MAX_EVENT_QUEUE_SIZE 20
+#define MAX_EVENT_QUEUE_SIZE 8
 
 // Create a new class EventQueue that inherits from the Queue class
 class EventQueue : public Queue<EVENT, MAX_EVENT_QUEUE_SIZE>
