@@ -1,3 +1,8 @@
+/**
+ * @file main.cpp
+ * @brief Main program file for the React Step Node application.
+ */
+
 #include <Arduino.h>
 #include <ArduinoLog.h>
 #include <printf.h>
@@ -32,118 +37,159 @@ Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
 
-
+/**
+ * @brief Get the currently active state of the state machine.
+ * @return The current state.
+ */
 STATE_PRODUCT state_machine_get_active_state()
 {
   return state;
 }
 
+/**
+ * @brief Switch the state of the state machine to a new state.
+ * @param new_state The new state to switch to.
+ */
 void state_machine_switch_state(STATE_PRODUCT new_state)
 {
   state = new_state;
   timestamp_last_state_transition = millis();
 }
 
+/**
+ * @brief Initialize the state machine with the initial state.
+ */
 void state_machine_setup()
 {
-  state = INIT; // Initialize the state machine with the initial state
+  state = INIT;
 }
 
+/**
+ * @brief Handle the INIT state.
+ * @param event The event to handle.
+ */
+void handle_init_state(EVENT event)
+{
+  if (event.type == EVENT_SYS_TYPE_READY)
+  {
+    state_machine_switch_state(READY);
+    Log.noticeln(F("state_machine_task: READY event, switching to READY state"));
+    display_message(MSG_HELLO, 2);
+    display_push_message_to_queue(MSG_IDLE, 0);
+    led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
+  }
+}
+
+/**
+ * @brief Handle the READY state.
+ * @param event The event to handle.
+ */
+void handle_ready_state(EVENT event)
+{
+  switch (event.type)
+  {
+  case EVENT_SYS_TYPE_START:
+    state_machine_switch_state(RUN);
+    Log.noticeln(F("state_machine_task: switching to RUN state"));
+    task_react_engine.enable();
+    display_message(MSG_GO, 2);
+    led_set_color(COLOR_BLACK);
+    break;
+  case EVENT_SYS_TYPE_SET_LP:
+    state_machine_switch_state(SET);
+    Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
+    display_number(rf_get_node_id());
+    display_blink_numbers(true);
+    break;
+  default:
+    break;
+  }
+}
+
+/**
+ * @brief Handle the RUN state.
+ * @param event The event to handle.
+ */
+void handle_run_state(EVENT event)
+{
+  // Handle RUNNING state
+  switch (event.type)
+  {
+  case EVENT_SYS_TYPE_STOP:
+    state_machine_switch_state(READY);
+    Log.noticeln(F("state_machine_task: STOP event, switching to READY state"));
+    task_react_engine.disable();
+    react_engine_stop();
+    display_message(MSG_STOP);
+    led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
+    break;
+  case EVENT_SYS_TYPE_START:
+    state_machine_switch_state(READY);
+    Log.noticeln(F("state_machine_task: PAUSE event, switching to READY state"));
+    task_react_engine.disable();
+    react_engine_pause();
+    display_message(MSG_PAUSE);
+    led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
+    break;
+  }
+}
+
+/**
+ * @brief Handle the SET state.
+ * @param event The event to handle.
+ */
+void handle_set_state(EVENT event)
+{
+  switch (event.type)
+  {
+  case EVENT_SYS_TYPE_SET_LP:
+    Log.verboseln(F("state_machine_task: SET event, switching to READY state"));
+    display_blink_numbers(false);
+    state_machine_switch_state(READY);
+    display_message(MSG_IDLE);
+    led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
+    break;
+  case EVENT_SYS_TYPE_SET_SP:
+    Log.verboseln(F("state_machine_task: SET_SP event"));
+    rf_increment_node_id();
+    display_number(rf_get_node_id());
+  default:
+    break;
+  }
+}
+
+/**
+ * @brief Main state machine task that processes events and transitions between states.
+ */
 void state_machine_task()
 {
-
   EVENT event;
   if (event_registry_pop_sys_event(event))
   {
     switch (state)
     {
     case INIT:
-      if (event.type == EVENT_SYS_TYPE_READY)
-      {
-        state_machine_switch_state(READY);
-        Log.noticeln(F("state_machine_task: READY event, switching to READY state"));
-        display_message(MSG_HELLO, 2);
-        display_push_message_to_queue(MSG_IDLE, 0);
-        led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
-      }
+      handle_init_state(event);
       break;
     case READY:
-      switch (event.type)
-      {
-      case EVENT_SYS_TYPE_START:
-        state_machine_switch_state(RUN);
-        Log.noticeln(F("state_machine_task: switching to RUN state"));
-        task_react_engine.enable();
-        display_message(MSG_GO, 2);
-        led_set_color(COLOR_BLACK);
-        break;
-      case EVENT_SYS_TYPE_SET_LP:
-        state_machine_switch_state(SET);
-        Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
-        display_number(rf_get_node_id());
-        display_blink_numbers(true);
-        break;
-      default:
-        break;
-      }
+      handle_ready_state(event);
       break;
-
     case RUN:
-      // Handle RUNNING state
-      switch (event.type)
-      {
-      case EVENT_SYS_TYPE_STOP:
-        state_machine_switch_state(READY);
-        Log.noticeln(F("state_machine_task: STOP event, switching to READY state"));
-        task_react_engine.disable();
-        react_engine_stop();
-        display_message(MSG_STOP);
-        led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
-        break;
-      case EVENT_SYS_TYPE_START:
-        state_machine_switch_state(READY);
-        Log.noticeln(F("state_machine_task: PAUSE event, switching to READY state"));
-        task_react_engine.disable();
-        react_engine_pause();
-        display_message(MSG_PAUSE);
-        led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
-        break;
-      }
+      handle_run_state(event);
       break;
-
     case SET:
-      // Handle SETTING state
-      switch (event.type)
-      {
-      case EVENT_SYS_TYPE_SET_LP:
-        Log.verboseln(F("state_machine_task: SET event, switching to READY state"));
-        display_blink_numbers(false);
-        state_machine_switch_state(READY);
-        display_message(MSG_IDLE);
-        led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
-        break;
-      case EVENT_SYS_TYPE_SET_SP:
-        Log.verboseln(F("state_machine_task: SET_SP event"));
-        rf_increment_node_id();
-        display_number(rf_get_node_id());
-
-      default:
-        break;
-      }
+      handle_set_state(event);
       break;
     case PAUSE:
       // Handle PAUSE state
       // Transition to the next state if needed
       state_machine_switch_state(READY);
       break;
-
     default:
       // Handle any unexpected or error state
       break;
     }
   }
-
-  // Your code here for any other tasks in the main loop
 }
 
 void setup()
