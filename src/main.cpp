@@ -221,11 +221,6 @@ void setup()
   runner.addTask(task_state_machine);
   task_state_machine.enable();
 
-  // Create and Launch LED task
-  led_setup();
-  runner.addTask(task_led);
-  task_led.enable();
-
   // Create and Launch Event Registry task
   event_registry_setup();
   runner.addTask(task_event_registry);
