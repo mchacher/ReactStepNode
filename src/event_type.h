@@ -6,6 +6,7 @@
 
 // Define an enumeration to represent system event types with hex values
 typedef enum {
+    EVENT_TYPE_NONE = 0,
     // System Events
     EVENT_SYS_TYPE_START    = 0x10,
     EVENT_SYS_TYPE_STOP     = 0x12,
@@ -24,6 +25,7 @@ typedef enum {
     EVENT_APP_TYPE_FOOT_RELEASE         = 0x43,
     EVENT_APP_TYPE_FOOT_RELEASE_LEFT    = 0x44,
     EVENT_APP_TYPE_FOOT_RELEASE_RIGHT   = 0x45,
+    EVENT_APP_TIMER                     = 0x46,
     // Add more workout event types as needed with appropriate hex values
     // ...
 } EVENT_TYPE;
@@ -32,6 +34,7 @@ typedef enum {
 typedef struct {
     EVENT_TYPE type; // Type of the event
     uint32_t timestamp;
+    uint16_t value;
 } EVENT;
 
 
