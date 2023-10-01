@@ -116,6 +116,17 @@ bool event_registry_push(EVENT_TYPE event_type)
     }
 }
 
+/**
+ * @brief Push an app event
+ *
+ * @param event The app event type to push onto the queue.
+ * @return true if the event was successfully pushed, false if the queue is full.
+ */
+bool event_registry_push_app_event(EVENT event)
+{
+    return queue_app_event.push(event);
+}
+
 bool event_registry_get_app_event(EVENT_TYPE type, unsigned long freshness, EVENT &event)
 {
     //Log.noticeln(F("Checking app event in registry with freshness %lu"), freshness);
