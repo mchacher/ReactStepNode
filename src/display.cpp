@@ -78,7 +78,7 @@ void display_message(const char *message, uint8_t duration)
 void display_push_message_to_queue(const char *message, uint8_t duration)
 {
     QueuedMessage qmsg;
-    Log.noticeln(F("display: pushing message to queue"));
+    Log.verboseln(F("display: pushing message to queue"));
     qmsg.msg = message;
     qmsg.duration = duration;
     messages_queue.push(qmsg);
@@ -132,14 +132,14 @@ void display_task()
         bool isAnimationRunning = display.Animate();
         if (!isAnimationRunning)
         {
-            Log.verbose(F("display: Animation not running"));
+            Log.verboseln(F("display: Animation not running"));
             display.startStringScroll_P(msg, 300);
             if (expiration_time != 0 && millis() > expiration_time)
             {
                 QueuedMessage qmsg;
                 if (messages_queue.pop(qmsg))
                 {
-                    Log.noticeln(F("display: pop message from queue"));
+                    Log.verboseln(F("display: pop message from queue"));
                     display_message(qmsg.msg, qmsg.duration);
                 }
             }
