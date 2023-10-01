@@ -11,9 +11,7 @@ uint16_t mic_read()
 {
 
   int n = 0;
-  uint16_t height = 0;
   n = analogRead(MIC_PIN); // Raw reading from  line in
-  //n = abs(n - 256 - DC_OFFSET);    // Center on zero
   n = abs(n - DC_OFFSET);
   n = (n <= NOISE) ? 0 : (n - NOISE); // Remove noise/hum
   return n;
