@@ -8,8 +8,8 @@ typedef enum {
     START = 0x80,
     END = 0x81,
     WAIT_EVENT = 0x82,
-    TIMER = 0x83,
-    SEND_EVENT = 0x84,
+    TIMER_HOLD = 0x83,
+    TIMER = 0x84,
     LED_COLOR = 0xA0,
     LED_TRAFFIC_LIGHT = 0xA1,
     LED_EFFECT = 0xA2,
@@ -17,7 +17,8 @@ typedef enum {
     FOOT_PRESS_LEFT_COLOR = 0xB1,
     FOOT_PRESS_RIGHT_COLOR = 0xB2,
     FOOT_PRESS_COUNTER = 0xB3,
-    FOOT_PRESS_COUNTER_RESET = 0xB4
+    FOOT_PRESS_COUNTER_RESET = 0xB4,
+    SEND_EVENT = 0xc0
 } COMMANDS;
 
 typedef enum {
