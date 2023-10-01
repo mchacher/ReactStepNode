@@ -20,7 +20,6 @@ template <int MAX_ITEMS>
 class AsyncCommandsList : public List<ASYNC_COMMANDS, MAX_ITEMS>
 {
 public:
-    // Constructor
     AsyncCommandsList() {}
 
     /**
@@ -34,10 +33,10 @@ public:
     size_t getItemsByEventType(EVENT_TYPE eventType, ASYNC_COMMANDS *resultItems[], size_t maxResults)
     {
         size_t itemCount = 0;
-        Log.noticeln(F("AsyncCommandsList size: %i"), this->size());
+        Log.verboseln(F("AsyncCommandsList size: %i"), this->size());
         for (size_t i = 0; i < this->size() && itemCount < maxResults; i++)
         {
-            Log.noticeln(F("AsyncCommandsList event_type: %i"), this->items[i].event_type);
+            Log.verboseln(F("AsyncCommandsList event_type: %i"), this->items[i].event_type);
             if (this->items[i].event_type == eventType)
             {
                 resultItems[itemCount] = &this->items[i];
@@ -59,10 +58,10 @@ public:
     size_t getItemsByCommandCode(uint8_t command_code, ASYNC_COMMANDS *resultItems[], size_t maxResults)
     {
         size_t itemCount = 0;
-        Log.noticeln(F("AsyncCommandsList size: %i"), this->size());
+        Log.verboseln(F("AsyncCommandsList size: %i"), this->size());
         for (size_t i = 0; i < this->size() && itemCount < maxResults; i++)
         {
-            Log.noticeln(F("AsyncCommandsList command_code: %i"), this->items[i].bytecode);
+            Log.verboseln(F("AsyncCommandsList command_code: %i"), this->items[i].bytecode);
             if (this->items[i].bytecode == command_code)
             {
                 resultItems[itemCount] = &this->items[i];
