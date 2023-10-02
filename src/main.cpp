@@ -13,7 +13,9 @@
 #include "event_registry.h"
 #include "foot_sensor.h"
 #include "display.h"
+#if defined(MINI_REACT_STEP_MOCK_UP)
 #include "button.h"
+#endif
 #include "hardware_config.h"
 #include "react_scheduler.h"
 #include "mic.h"
@@ -31,7 +33,9 @@ Task task_react_engine(REACT_ENGINE_CYCLE_TIME, &react_engine_task);
 Task task_event_registry(TASK_CYCLE_SLOW, &event_registry_task);
 Task task_foot_sensor(TASK_CYCLE_FAST, &foot_sensor_task);
 Task task_display(TASK_CYCLE_MEDIUM, &display_task);
-Task task_button(TASK_CYCLE_FAST, &button_task);
+#if defined(MINI_REACT_STEP_MOCK_UP)
+  Task task_button(TASK_CYCLE_FAST, &button_task);
+#endif
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
 
 static STATE_PRODUCT state;
@@ -98,7 +102,7 @@ void handle_ready_state(EVENT event)
   case EVENT_SYS_TYPE_SET_LP:
     state_machine_switch_state(SET);
     Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
-    display_number(rf_get_node_id());
+    // display_number(rf_get_node_id());
     display_blink_numbers(true);
     break;
   default:
@@ -151,8 +155,8 @@ void handle_set_state(EVENT event)
     break;
   case EVENT_SYS_TYPE_SET_SP:
     Log.verboseln(F("state_machine_task: SET_SP event"));
-    rf_increment_node_id();
-    display_number(rf_get_node_id());
+    // rf_increment_node_id();
+    // display_number(rf_get_node_id());
   default:
     break;
   }
@@ -199,10 +203,10 @@ void setup()
   {
   }
   Log.begin(LOG_LEVEL_NOTICE, &Serial);
-#ifdef MINI_STEP_MOCK_UP
-  Log.notice(F("Main: Starting Mini Step Mockup with ID: %d" CR), rf_get_node_id());
-#elif
-  Log.notice(F("Main: Starting React Step Node with ID: %d" CR), NODE_ID);
+#if defined(MINI_STEP_MOCK_UP)
+  Log.notice(F("Main: Starting Mini Step Mockup"));
+#elif defined(MICRO_STEP_MOCK_UP)
+  Log.noticeln(F("Main: Starting Micro Step Mockup"));
 #endif
 
   // setupRF();
@@ -230,11 +234,12 @@ void setup()
   foot_sensor_setup();
   runner.addTask(task_foot_sensor);
   task_foot_sensor.enable();
-
+#if defined(MINI_REACT_STEP_MOCK_UP)
   // Create and Launch Button task
   button_setup();
   runner.addTask(task_button);
   task_button.enable();
+#endif
 
   // Create and Launch React Engine task
   react_engine_setup();
@@ -245,9 +250,9 @@ void setup()
   runner.addTask(task_display);
   task_display.enable();
 
-  // rf_setup();
-  // runner.addTask(task_rf);
-  // task_rf.enable();
+  rf_setup();
+  runner.addTask(task_rf);
+  task_rf.enable();
 
   setup_mic();
 
