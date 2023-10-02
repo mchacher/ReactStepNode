@@ -20,24 +20,36 @@
 #include "react_scheduler.h"
 #include "mic.h"
 
-ReactScheduler runner;
-
 #define TASK_CYCLE_FAST 20
 #define TASK_CYCLE_MEDIUM 100
 #define TASK_CYCLE_SLOW 250
 
+ReactScheduler runner;
+communication::rf comm;
+uint32_t counter(0);
+
+void taskCommReceiveFunction() {
+  comm.receive();
+}
+void taskCommSendFunction() {
+  comm.send(0, counter);
+  counter += 1;
+}
+
 // Tasks
 Task task_led(TASK_CYCLE_FAST, &led_task);
-Task task_rf(TASK_CYCLE_FAST, &rf_task);
 Task task_react_engine(REACT_ENGINE_CYCLE_TIME, &react_engine_task);
 Task task_event_registry(TASK_CYCLE_SLOW, &event_registry_task);
 Task task_foot_sensor(TASK_CYCLE_FAST, &foot_sensor_task);
 Task task_display(TASK_CYCLE_MEDIUM, &display_task);
 #if defined(MINI_REACT_STEP_MOCK_UP)
-  Task task_button(TASK_CYCLE_FAST, &button_task);
+Task task_button(TASK_CYCLE_FAST, &button_task);
 #endif
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
+Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
+Task taskCommSend(2000, &taskCommSendFunction);
 
+// Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
 
@@ -102,7 +114,7 @@ void handle_ready_state(EVENT event)
   case EVENT_SYS_TYPE_SET_LP:
     state_machine_switch_state(SET);
     Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
-    // display_number(rf_get_node_id());
+    display_number(comm.getNodeId());
     display_blink_numbers(true);
     break;
   default:
@@ -127,6 +139,7 @@ void handle_run_state(EVENT event)
     display_message(MSG_STOP);
     led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
     break;
+
   case EVENT_SYS_TYPE_START:
     state_machine_switch_state(READY);
     Log.noticeln(F("state_machine_task: PAUSE event, switching to READY state"));
@@ -134,6 +147,12 @@ void handle_run_state(EVENT event)
     react_engine_pause();
     display_message(MSG_PAUSE);
     led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
+    break;
+
+  case EVENT_SYS_TYPE_PAUSE:
+    break;
+
+  default:
     break;
   }
 }
@@ -155,8 +174,8 @@ void handle_set_state(EVENT event)
     break;
   case EVENT_SYS_TYPE_SET_SP:
     Log.verboseln(F("state_machine_task: SET_SP event"));
-    // rf_increment_node_id();
-    // display_number(rf_get_node_id());
+    comm.incrementNode_id();
+    display_number(comm.getNodeId());
   default:
     break;
   }
@@ -196,10 +215,33 @@ void state_machine_task()
   }
 }
 
+
 void setup()
 {
   Serial.begin(115200);
   while (!Serial)
+    delay(10);
+
+  // ONLY FOR ADRI testing (without react step proto)
+  randomSeed(analogRead(0));
+  uint8_t rand(random(256));
+  for (int i = 0; i <= rand; i++) {
+    comm.incrementNode_id();
+  }
+
+  Serial.printf("[%s] Starting React Step Node with ID: [%d]\r\n", __func__, comm.getNodeId());
+  if (0 == comm.getNodeId()) {
+    Serial.println(" ---------- MASTER ----------\r\n");
+  }
+  else {
+    Serial.printf("---------- NODE %d ----------\r\n", comm.getNodeId());
+  }
+
+  // Init communication module
+  comm.setup();
+
+  // Initialize Tasks
+  Serial.println("Initialized scheduler");
   {
   }
   Log.begin(LOG_LEVEL_NOTICE, &Serial);
@@ -250,9 +292,16 @@ void setup()
   runner.addTask(task_display);
   task_display.enable();
 
-  rf_setup();
-  runner.addTask(task_rf);
-  task_rf.enable();
+  if (0 == comm.getNodeId()) { // Master just listen
+    runner.addTask(taskCommReceive);
+    taskCommReceive.enable();
+    Serial.println("--- taskCommReceive: added and enabled");
+  }
+  else {
+    runner.addTask(taskCommSend);
+    taskCommSend.enable();
+    Serial.println("--- taskCommSend: added and enabled");
+  }
 
   setup_mic();
 
