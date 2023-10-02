@@ -16,7 +16,7 @@ static bool blink = false;
 static bool show_number = true;
 
 // Define the maximum queue size
-const int MAX_QUEUE_SIZE = 10;
+const int MAX_QUEUE_SIZE = 5;
 // Create a Queue instance for Messages
 Queue<QueuedMessage, MAX_QUEUE_SIZE> messages_queue;
 
@@ -139,7 +139,7 @@ void display_task()
                 QueuedMessage qmsg;
                 if (messages_queue.pop(qmsg))
                 {
-                    Log.verboseln(F("display: pop message from queue"));
+                    Log.noticeln(F("display: pop message from queue"));
                     display_message(qmsg.msg, qmsg.duration);
                 }
             }
