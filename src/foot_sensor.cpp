@@ -4,7 +4,8 @@
 #include "event_registry.h"
 #include "hardware_config.h"
 
-#ifdef MINI_STEP_MOCK_UP
+#if defined(MINI_STEP_MOCK_UP) || defined(MICRO_STEP_MOCK_UP)
+
 #include <JC_Button.h>
 
 Button foot_sensor_left(PIN_PB_FOOT_LEFT);
