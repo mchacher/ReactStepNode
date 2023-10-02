@@ -1,7 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define MINI_STEP_MOCK_UP 1
+#define MINI_STEP_MOCK_UP   1
+//#define MICRO_STEP_MOCK_UP   1
 
 // TM 1637 display
 #define PIN_TM_1637_CLK     2
