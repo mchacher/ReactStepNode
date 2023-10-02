@@ -27,8 +27,6 @@ void button_setup()
     pb_custom.begin();
 }
 
-#endif
-
 /**
  * @brief Read and handle button events.
  *
@@ -97,3 +95,5 @@ void button_task()
         Log.noticeln(F("button task: CUSTOM button pressed"));
     }
 }
+
+#endif
