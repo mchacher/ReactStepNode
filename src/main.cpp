@@ -5,18 +5,21 @@
 
 #include <Arduino.h>
 #include <ArduinoLog.h>
+#include "hardware_config.h"
 #include <printf.h>
-#include "rf.h"
 #include "state_machine.h"
 #include "led.h"
 #include "react_engine.h"
 #include "event_registry.h"
 #include "foot_sensor.h"
 #include "display.h"
-#if defined(MINI_REACT_STEP_MOCK_UP)
+#if defined(MINI_STEP_MOCK_UP)
 #include "button.h"
 #endif
-#include "hardware_config.h"
+
+#if REACT_MESH == 1
+#include "rf.h"
+#endif
 #include "react_scheduler.h"
 #include "mic.h"
 
@@ -25,6 +28,8 @@
 #define TASK_CYCLE_SLOW 250
 
 ReactScheduler runner;
+
+#if REACT_MESH == 1
 communication::rf comm;
 uint32_t counter(0);
 
@@ -35,6 +40,7 @@ void taskCommSendFunction() {
   comm.send(0, counter);
   counter += 1;
 }
+#endif
 
 // Tasks
 Task task_led(TASK_CYCLE_FAST, &led_task);
@@ -42,13 +48,14 @@ Task task_react_engine(REACT_ENGINE_CYCLE_TIME, &react_engine_task);
 Task task_event_registry(TASK_CYCLE_SLOW, &event_registry_task);
 Task task_foot_sensor(TASK_CYCLE_FAST, &foot_sensor_task);
 Task task_display(TASK_CYCLE_MEDIUM, &display_task);
-#if defined(MINI_REACT_STEP_MOCK_UP)
+#if defined(MINI_STEP_MOCK_UP)
 Task task_button(TASK_CYCLE_FAST, &button_task);
 #endif
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
+#if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
 Task taskCommSend(2000, &taskCommSendFunction);
-
+#endif
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
@@ -114,7 +121,9 @@ void handle_ready_state(EVENT event)
   case EVENT_SYS_TYPE_SET_LP:
     state_machine_switch_state(SET);
     Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
+    #if REACT_MESH == 1
     display_number(comm.getNodeId());
+    #endif
     display_blink_numbers(true);
     break;
   default:
@@ -174,8 +183,10 @@ void handle_set_state(EVENT event)
     break;
   case EVENT_SYS_TYPE_SET_SP:
     Log.verboseln(F("state_machine_task: SET_SP event"));
+    #if REACT_MESH == 1
     comm.incrementNode_id();
     display_number(comm.getNodeId());
+    #endif
   default:
     break;
   }
@@ -222,6 +233,7 @@ void setup()
   while (!Serial)
     delay(10);
 
+  #if REACT_MESH == 1
   // ONLY FOR ADRI testing (without react step proto)
   randomSeed(analogRead(0));
   uint8_t rand(random(256));
@@ -229,19 +241,21 @@ void setup()
     comm.incrementNode_id();
   }
 
-  Serial.printf("[%s] Starting React Step Node with ID: [%d]\r\n", __func__, comm.getNodeId());
+  Log.noticeln(F("[%s] Starting React Step Node with ID: [%d]"), __func__, comm.getNodeId());
   if (0 == comm.getNodeId()) {
-    Serial.println(" ---------- MASTER ----------\r\n");
+    Log.noticeln(F(" ---------- MASTER ----------"));
   }
   else {
-    Serial.printf("---------- NODE %d ----------\r\n", comm.getNodeId());
+    Log.noticeln(F("---------- NODE %d ----------"), comm.getNodeId());
   }
 
   // Init communication module
   comm.setup();
-
+  # else
+    Log.noticeln(F("Starting React Step Node - REACT MESH is not activated!"));
+  #endif
   // Initialize Tasks
-  Serial.println("Initialized scheduler");
+  Log.noticeln(F("Initialized scheduler"));
   {
   }
   Log.begin(LOG_LEVEL_NOTICE, &Serial);
@@ -276,7 +290,7 @@ void setup()
   foot_sensor_setup();
   runner.addTask(task_foot_sensor);
   task_foot_sensor.enable();
-#if defined(MINI_REACT_STEP_MOCK_UP)
+#if defined(MINI_STEP_MOCK_UP)
   // Create and Launch Button task
   button_setup();
   runner.addTask(task_button);
@@ -292,17 +306,18 @@ void setup()
   runner.addTask(task_display);
   task_display.enable();
 
+  #if REACT_MESH == 1
   if (0 == comm.getNodeId()) { // Master just listen
     runner.addTask(taskCommReceive);
     taskCommReceive.enable();
-    Serial.println("--- taskCommReceive: added and enabled");
+    Log.noticeln(F("--- taskCommReceive: added and enabled"));
   }
   else {
     runner.addTask(taskCommSend);
     taskCommSend.enable();
-    Serial.println("--- taskCommSend: added and enabled");
+    Log.noticeln(F("--- taskCommSend: added and enabled"));
   }
-
+  #endif
   setup_mic();
 
   event_registry_push(EVENT_SYS_TYPE_READY);
