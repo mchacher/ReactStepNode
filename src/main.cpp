@@ -2,7 +2,6 @@
  * @file main.cpp
  * @brief Main program file for the React Step Node application.
  */
-
 #include <Arduino.h>
 #include <ArduinoLog.h>
 #include "hardware_config.h"
@@ -16,9 +15,11 @@
 #if defined(MINI_STEP_MOCK_UP)
 #include "button.h"
 #endif
-#include "rf.h"
 #include "react_scheduler.h"
 #include "mic.h"
+#if REACT_MESH == 1
+#include "rf.h"
+#endif
 
 #define TASK_CYCLE_FAST 20
 #define TASK_CYCLE_MEDIUM 100
@@ -26,18 +27,18 @@
 
 ReactScheduler runner;
 
+#if REACT_MESH == 1
 communication::rf comm;
 uint32_t counter(0);
 
-void taskCommReceiveFunction()
-{
+void taskCommReceiveFunction() {
   comm.receive();
 }
-void taskCommSendFunction()
-{
+void taskCommSendFunction() {
   comm.send(0, counter);
   counter += 1;
 }
+#endif
 
 // Tasks
 Task task_led(TASK_CYCLE_FAST, &led_task);
@@ -49,9 +50,11 @@ Task task_display(TASK_CYCLE_MEDIUM, &display_task);
 Task task_button(TASK_CYCLE_FAST, &button_task);
 #endif
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
+#if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
 Task taskCommSend(2000, &taskCommSendFunction);
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
+#endif
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
 
@@ -108,14 +111,14 @@ void handle_ready_state(EVENT event)
   {
   case EVENT_SYS_TYPE_START:
     state_machine_switch_state(RUN);
-    Log.noticeln(F("state_machine_task: switching to RUN state"));
+    Log.noticeln(F("state_machine_task: switching to RUN state" CR));
     task_react_engine.enable();
     display_message(MSG_GO, 2);
     led_set_color(COLOR_BLACK);
     break;
   case EVENT_SYS_TYPE_SET_LP:
     state_machine_switch_state(SET);
-    Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
+    Log.noticeln(F("state_machine_task: SET event, switching to SET state" CR));
 #if REACT_MESH == 1
     display_number(comm.getNodeId());
 #endif
@@ -137,7 +140,7 @@ void handle_run_state(EVENT event)
   {
   case EVENT_SYS_TYPE_STOP:
     state_machine_switch_state(READY);
-    Log.noticeln(F("state_machine_task: STOP event, switching to READY state"));
+    Log.noticeln(F("state_machine_task: STOP event, switching to READY state" CR));
     task_react_engine.disable();
     react_engine_stop();
     display_message(MSG_STOP);
@@ -146,7 +149,7 @@ void handle_run_state(EVENT event)
 
   case EVENT_SYS_TYPE_START:
     state_machine_switch_state(READY);
-    Log.noticeln(F("state_machine_task: PAUSE event, switching to READY state"));
+    Log.noticeln(F("state_machine_task: PAUSE event, switching to READY state" CR));
     task_react_engine.disable();
     react_engine_pause();
     display_message(MSG_PAUSE);
@@ -170,14 +173,14 @@ void handle_set_state(EVENT event)
   switch (event.type)
   {
   case EVENT_SYS_TYPE_SET_LP:
-    Log.verboseln(F("state_machine_task: SET event, switching to READY state"));
+    Log.verboseln(F("state_machine_task: SET event, switching to READY state" CR));
     display_blink_numbers(false);
     state_machine_switch_state(READY);
     display_message(MSG_IDLE);
     led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
     break;
   case EVENT_SYS_TYPE_SET_SP:
-    Log.verboseln(F("state_machine_task: SET_SP event"));
+    Log.verboseln(F("state_machine_task: SET_SP event" CR));
 #if REACT_MESH == 1
     comm.incrementNode_id();
     display_number(comm.getNodeId());
@@ -226,6 +229,12 @@ void setup()
   Serial.begin(115200);
   while (!Serial)
     delay(10);
+
+  Log.begin(LOG_LEVEL_NOTICE, &Serial);
+
+  Log.noticeln(F("[%s] Starting UP"), __func__);
+
+#if REACT_MESH == 1
   // ONLY FOR ADRI testing (without react step proto)
   randomSeed(analogRead(0));
   uint8_t rand(random(256));
@@ -246,23 +255,22 @@ void setup()
 
   // Init communication module
   comm.setup();
-
+#else
+  Log.noticeln(F("Starting React Step Node - REACT MESH is not activated!"));
+#endif
   // Initialize Tasks
   Log.noticeln(F("Initialized scheduler"));
-  {
-  }
-  Log.begin(LOG_LEVEL_NOTICE, &Serial);
+
 #if defined(MINI_STEP_MOCK_UP)
   Log.notice(F("Main: Starting Mini Step Mockup"));
 #elif defined(MICRO_STEP_MOCK_UP)
   Log.noticeln(F("Main: Starting Micro Step Mockup"));
 #endif
 
-  // setupRF();
   // initialize scheduler
-  Log.notice(F("Main: initializing scheduler" CR));
+  Log.notice(F("Main: initializing scheduler"));
   runner.init();
-  Log.notice(F("Main: launching tasks" CR));
+  Log.notice(F("Main: launching tasks"));
 
   // initialize state machine
   led_setup();
@@ -299,15 +307,15 @@ void setup()
   runner.addTask(task_display);
   task_display.enable();
 
-  if (0 == comm.getNodeId())
-  { // Master just listen
-    runner.addTask(taskCommReceive);
-    taskCommReceive.enable();
-    Log.noticeln(F("--- taskCommReceive: added and enabled"));
-  }
+#if REACT_MESH == 1
+  runner.addTask(taskCommReceive);
+  taskCommReceive.enable();
+  Log.noticeln(F("--- taskCommReceive: added and enabled"));
   runner.addTask(taskCommSend);
   taskCommSend.enable();
   Log.noticeln(F("--- taskCommSend: added and enabled"));
+#endif
+
   setup_mic();
   event_registry_push(EVENT_SYS_TYPE_READY);
 }

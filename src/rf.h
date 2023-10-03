@@ -1,3 +1,6 @@
+#include "hardware_config.h"
+#if REACT_MESH == 1
+
 #ifndef RF_H
 #define RF_H
 
@@ -33,13 +36,11 @@ public:
   void incrementNode_id();
 
 private:
-#if REACT_MESH == 1
   RF24 mRadio;
   RF24Network mNetwork;
   RF24Mesh mMesh;
-#endif
 
-  bool mNodeIdIsSet;
+  uint8_t mNodeId;
 
   static const rf24_gpio_pin_t PIN_CE;
   static const rf24_gpio_pin_t PIN_CSN;
@@ -47,4 +48,5 @@ private:
 };
 }
 
+#endif
 #endif
