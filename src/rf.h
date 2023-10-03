@@ -1,3 +1,5 @@
+#include "hardware_config.h"
+#if REACT_MESH == 1
 
 #ifndef RF_H
 #define RF_H
@@ -45,5 +47,7 @@ private:
   static const uint8_t DEFAULT_NODE_ID;
 };
 }
+
+#endif
 
 #endif
