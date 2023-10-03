@@ -1,10 +1,9 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define MINI_STEP_MOCK_UP   1
-//#define MICRO_STEP_MOCK_UP   1
-
-#define REACT_MESH          0 // set to 1 to activate RADIO
+#define REACT_MESH              0 // set to 1 to activate RADIO
+#define LOCAL_COMMAND_BUTTONS   1 // set to 1 to activate PLAY/PAUSE, STOP and CUSTOM Buttons
+#define DIGITAL_FOOT_SENSOR     1 // set to 1 for digital foot sensor (typically on mock up)
 
 // TM 1637 display
 #define PIN_TM_1637_CLK     2

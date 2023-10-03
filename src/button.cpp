@@ -6,7 +6,7 @@
 #include "event_type.h"
 #include "event_registry.h"
 
-#ifdef MINI_STEP_MOCK_UP
+#if (LOCAL_COMMAND_BUTTONS == 1)
 
 #define LONG_PRESS_TIME 1000 // Long press time threshold in milliseconds (1s)
 
@@ -94,6 +94,18 @@ void button_task()
     {
         Log.noticeln(F("button task: CUSTOM button pressed"));
     }
+}
+
+#else
+
+void button_setup()
+{
+    Log.noticeln("button_setup: Warning - local command buttons not activated");
+}
+
+void button_task()
+{
+    return 0;
 }
 
 #endif

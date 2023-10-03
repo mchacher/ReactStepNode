@@ -16,10 +16,7 @@
 #if defined(MINI_STEP_MOCK_UP)
 #include "button.h"
 #endif
-
-#if REACT_MESH == 1
 #include "rf.h"
-#endif
 #include "react_scheduler.h"
 #include "mic.h"
 
@@ -29,18 +26,18 @@
 
 ReactScheduler runner;
 
-#if REACT_MESH == 1
 communication::rf comm;
 uint32_t counter(0);
 
-void taskCommReceiveFunction() {
+void taskCommReceiveFunction()
+{
   comm.receive();
 }
-void taskCommSendFunction() {
+void taskCommSendFunction()
+{
   comm.send(0, counter);
   counter += 1;
 }
-#endif
 
 // Tasks
 Task task_led(TASK_CYCLE_FAST, &led_task);
@@ -52,10 +49,8 @@ Task task_display(TASK_CYCLE_MEDIUM, &display_task);
 Task task_button(TASK_CYCLE_FAST, &button_task);
 #endif
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
-#if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
 Task taskCommSend(2000, &taskCommSendFunction);
-#endif
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
@@ -121,9 +116,9 @@ void handle_ready_state(EVENT event)
   case EVENT_SYS_TYPE_SET_LP:
     state_machine_switch_state(SET);
     Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
-    #if REACT_MESH == 1
+#if REACT_MESH == 1
     display_number(comm.getNodeId());
-    #endif
+#endif
     display_blink_numbers(true);
     break;
   default:
@@ -183,10 +178,10 @@ void handle_set_state(EVENT event)
     break;
   case EVENT_SYS_TYPE_SET_SP:
     Log.verboseln(F("state_machine_task: SET_SP event"));
-    #if REACT_MESH == 1
+#if REACT_MESH == 1
     comm.incrementNode_id();
     display_number(comm.getNodeId());
-    #endif
+#endif
   default:
     break;
   }
@@ -226,34 +221,32 @@ void state_machine_task()
   }
 }
 
-
 void setup()
 {
   Serial.begin(115200);
   while (!Serial)
     delay(10);
-
-  #if REACT_MESH == 1
   // ONLY FOR ADRI testing (without react step proto)
   randomSeed(analogRead(0));
   uint8_t rand(random(256));
-  for (int i = 0; i <= rand; i++) {
+  for (int i = 0; i <= rand; i++)
+  {
     comm.incrementNode_id();
   }
 
   Log.noticeln(F("[%s] Starting React Step Node with ID: [%d]"), __func__, comm.getNodeId());
-  if (0 == comm.getNodeId()) {
+  if (0 == comm.getNodeId())
+  {
     Log.noticeln(F(" ---------- MASTER ----------"));
   }
-  else {
+  else
+  {
     Log.noticeln(F("---------- NODE %d ----------"), comm.getNodeId());
   }
 
   // Init communication module
   comm.setup();
-  # else
-    Log.noticeln(F("Starting React Step Node - REACT MESH is not activated!"));
-  #endif
+
   // Initialize Tasks
   Log.noticeln(F("Initialized scheduler"));
   {
@@ -306,20 +299,16 @@ void setup()
   runner.addTask(task_display);
   task_display.enable();
 
-  #if REACT_MESH == 1
-  if (0 == comm.getNodeId()) { // Master just listen
+  if (0 == comm.getNodeId())
+  { // Master just listen
     runner.addTask(taskCommReceive);
     taskCommReceive.enable();
     Log.noticeln(F("--- taskCommReceive: added and enabled"));
   }
-  else {
-    runner.addTask(taskCommSend);
-    taskCommSend.enable();
-    Log.noticeln(F("--- taskCommSend: added and enabled"));
-  }
-  #endif
+  runner.addTask(taskCommSend);
+  taskCommSend.enable();
+  Log.noticeln(F("--- taskCommSend: added and enabled"));
   setup_mic();
-
   event_registry_push(EVENT_SYS_TYPE_READY);
 }
 

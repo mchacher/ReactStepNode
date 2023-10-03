@@ -4,7 +4,7 @@
 #include "event_registry.h"
 #include "hardware_config.h"
 
-#if defined(MINI_STEP_MOCK_UP) || defined(MICRO_STEP_MOCK_UP)
+#if (DIGITAL_FOOT_SENSOR == 1)
 
 #include <JC_Button.h>
 
@@ -21,13 +21,15 @@ void foot_sensor_setup()
     foot_sensor_right.begin();
 }
 
-#endif // MINI_STEP_MOCK_UP
+#endif
 
 enum FootSensorState {
     FOOT_SENSOR_NONE,
     FOOT_SENSOR_PRESSED,
     FOOT_SENSOR_RELEASED
 };
+
+
 
 /**
  * @brief Check the foot sensor state (pressed or released).
