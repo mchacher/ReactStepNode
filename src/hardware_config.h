@@ -4,6 +4,8 @@
 #define MINI_STEP_MOCK_UP   1
 //#define MICRO_STEP_MOCK_UP   1
 
+#define REACT_MESH          0 // set to 1 to activate RADIO
+
 // TM 1637 display
 #define PIN_TM_1637_CLK     2
 #define PIN_TM_1637_DIO     3
