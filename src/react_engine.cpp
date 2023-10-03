@@ -49,7 +49,7 @@
 // };
 
 // below is a kind of TRAFFIC LIGHT code to illustrate TIMER non blocking command
-const uint8_t react_code[] =
+const uint8_t react_code[256] =
     {
         START,
         LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
