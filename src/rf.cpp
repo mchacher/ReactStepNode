@@ -6,126 +6,123 @@
 
 namespace communication
 {
-const rf24_gpio_pin_t rf::PIN_CE = 7;
-const rf24_gpio_pin_t rf::PIN_CSN = 8;
-const uint8_t rf::DEFAULT_NODE_ID = 2;
+  const rf24_gpio_pin_t rf::PIN_CE = 7;
+  const rf24_gpio_pin_t rf::PIN_CSN = 8;
+  const uint8_t rf::DEFAULT_NODE_ID = 2;
 
-rf::rf() :
-  mRadio(PIN_CE, PIN_CSN),
-  mNetwork(mRadio),
-  mMesh(mRadio, mNetwork),
-  mNodeId(DEFAULT_NODE_ID)
-{
-  // Constructor for RF class when REACT_MESH is defined
-}
-
-void rf::setup()
-{
-  Log.noticeln(F("[%s] Node ID [%d]"), __func__, mNodeId);
-
-  // Connect to the mesh
-  if (!mMesh.begin())
+  rf::rf() : mRadio(PIN_CE, PIN_CSN),
+             mNetwork(mRadio),
+             mMesh(mRadio, mNetwork),
+             mNodeId(DEFAULT_NODE_ID)
   {
-    if (0 != mNodeId && mRadio.isChipConnected())
+    // Constructor for RF class when REACT_MESH is defined
+  }
+
+  void rf::setup()
+  {
+    Log.noticeln(F("[%s] Node ID [%d]"), __func__, mNodeId);
+
+    // Connect to the mesh
+    if (!mMesh.begin())
     {
-      do
+      if (0 != mNodeId && mRadio.isChipConnected())
       {
-        // mesh.renewAddress() will return MESH_DEFAULT_ADDRESS on failure to connect
-        Log.noticeln(F("Could not connect to network. Connecting to the mesh..."));
-      } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
+        do
+        {
+          // mesh.renewAddress() will return MESH_DEFAULT_ADDRESS on failure to connect
+          Log.noticeln(F("Could not connect to network. Connecting to the mesh..."));
+        } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
+      }
+      else
+      {
+        Log.noticeln(F("Radio hardware not responding."));
+        while (1)
+        {
+          // Hold in an infinite loop or manage this case using screen to show a user message.
+        }
+      }
     }
-    else
+    Log.noticeln(F("[%s] Communication stack READY"), __func__);
+  }
+
+  void rf::receive()
+  {
+    // Call mesh.update to keep the network updated
+    // todo: move it in dedicated method to be call each about 2 seconds
+    mMesh.update();
+
+    // Check for incoming data from the sensors
+    if (mNetwork.available())
     {
-      Log.noticeln(F("Radio hardware not responding."));
-      while (1)
+      RF24NetworkHeader header;
+      mNetwork.peek(header);
+      Log.noticeln(F("[%s] Node ID [%d]"), __func__, header.from_node - 1);
+      uint32_t data(0);
+      switch (header.type)
       {
-        // Hold in an infinite loop or manage this case using screen to show a user message.
+      case 'M':
+        mNetwork.read(header, &data, sizeof(data));
+        Log.noticeln(F("Data = [%lu]"), data);
+        break;
+      default:
+        mNetwork.read(header, 0, 0);
+        Log.noticeln(F("[%s] Received unmanaged data type [%d]"), __func__, header.type);
+        break;
       }
     }
   }
-  Log.noticeln(F("[%s] Communication stack READY"), __func__);
-}
 
-void rf::receive() {
-
-  // Call mesh.update to keep the network updated
-  // todo: move it in dedicated method to be call each about 2 seconds
-  mMesh.update();
-
-  // Check for incoming data from the sensors
-  if (mNetwork.available())
+  bool rf::send(uint16_t destNode, uint32_t data)
   {
-    RF24NetworkHeader header;
-    mNetwork.peek(header);
-    Log.noticeln(F("[%s] Node ID [%d]"), __func__, header.from_node - 1);
-    uint32_t data(0);
-    switch (header.type)
+    bool isSuccess(false);
+    // Call mesh.update to keep the network updated
+    mMesh.update();
+
+    if (!mMesh.write(&data, 'M', sizeof(data)))
     {
-    case 'M':
-      mNetwork.read(header, &data, sizeof(data));
-      Log.noticeln(F("Data = [%lu]"), data);
-      break;
-    default:
-      mNetwork.read(header, 0, 0);
-      Log.noticeln(F("[%s] Received unmanaged data type [%d]"), __func__, header.type);
-      break;
-    }
-  }
-}
-
-bool rf::send(uint16_t destNode, uint32_t data)
-{
-  bool isSuccess(false);
-
-  // Call mesh.update to keep the network updated
-  mMesh.update();
-
-  if (!mMesh.write(&data, 'M', sizeof(data)))
-  {
-    // If a write fails, check connectivity to the mesh network
-    if (!mMesh.checkConnection())
-    {
-      // The address could be refreshed per a specified timeframe or only when sequential writes fail, etc.
-      do
+      // If a write fails, check connectivity to the mesh network
+      if (!mMesh.checkConnection())
       {
-        Log.noticeln(F("[%s] Renewing Address..."), __func__);
-      } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
+        // The address could be refreshed per a specified timeframe or only when sequential writes fail, etc.
+        do
+        {
+          Log.noticeln(F("[%s] Renewing Address..."), __func__);
+        } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
+      }
+      else
+      {
+        Log.noticeln(F("[%s] Send fail, Test OK"), __func__);
+      }
     }
     else
     {
-      Log.noticeln(F("[%s] Send fail, Test OK"), __func__);
+      Log.noticeln(F("[%s] Send OK - [%d] Data = [%lu]"), __func__, mNodeId, data);
+      isSuccess = true;
     }
+    return isSuccess;
   }
-  else
+
+  uint16_t rf::getNodeId()
   {
-    Log.noticeln(F("[%s] Send OK - [%d] Data = [%lu]"), __func__, mNodeId, data);
-    isSuccess = true;
+    return mNodeId;
   }
 
-  return isSuccess;
-}
-
-uint16_t rf::getNodeId()
-{
-  return mNodeId;
-}
-
-void rf::incrementNode_id()
-{
-  mNodeId = (mNodeId + 1) % MAX_NODE_ID;
-
-  // Node ID 0 and 1 are reserved for Master
-  if (0 == mNodeId)
+  void rf::incrementNode_id()
   {
-    mNodeId = 2;
-  }
-  if (1 == mNodeId)
-  {
-    mNodeId = 2;
-  }
+    mNodeId = (mNodeId + 1) % MAX_NODE_ID;
 
-  mMesh.setNodeID(mNodeId);
-}
+    // Node ID 0 and 1 are reserved for Master
+    if (0 == mNodeId)
+    {
+      mNodeId = 2;
+    }
+    if (1 == mNodeId)
+    {
+      mNodeId = 2;
+    }
+
+    mMesh.setNodeID(mNodeId);
+  }
 
 }
 #endif
