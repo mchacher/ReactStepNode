@@ -12,9 +12,7 @@
 #include "event_registry.h"
 #include "foot_sensor.h"
 #include "display.h"
-#if defined(MINI_STEP_MOCK_UP)
 #include "button.h"
-#endif
 #include "react_scheduler.h"
 #include "mic.h"
 #if REACT_MESH == 1
@@ -46,9 +44,7 @@ Task task_react_engine(REACT_ENGINE_CYCLE_TIME, &react_engine_task);
 Task task_event_registry(TASK_CYCLE_SLOW, &event_registry_task);
 Task task_foot_sensor(TASK_CYCLE_FAST, &foot_sensor_task);
 Task task_display(TASK_CYCLE_MEDIUM, &display_task);
-#if defined(MINI_STEP_MOCK_UP)
 Task task_button(TASK_CYCLE_FAST, &button_task);
-#endif
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
 #if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
@@ -268,7 +264,7 @@ void setup()
 #endif
 
   // initialize scheduler
-  Log.notice(F("Main: initializing scheduler"));
+  Log.noticeln(F("Main: initializing scheduler"));
   runner.init();
   Log.notice(F("Main: launching tasks"));
 
@@ -291,12 +287,10 @@ void setup()
   foot_sensor_setup();
   runner.addTask(task_foot_sensor);
   task_foot_sensor.enable();
-#if defined(MINI_STEP_MOCK_UP)
   // Create and Launch Button task
   button_setup();
   runner.addTask(task_button);
   task_button.enable();
-#endif
 
   // Create and Launch React Engine task
   react_engine_setup();
