@@ -1,3 +1,5 @@
+#ifdef ATMEGA328P
+
 #include "WS2812.h"
 
 /*
@@ -145,3 +147,5 @@ w_nop16
 
   SREG=sreg_prev;
 }
+
+#endif

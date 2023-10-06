@@ -1,67 +1,67 @@
 #include <Arduino.h>
 #include <ArduinoLog.h>
 #include "react_engine.h"
-#include "led.h"
+#include "../hmi/led.h"
 #include "event_type.h"
 #include "event_registry.h"
 #include "react_code.h"
 #include "async_commands_list.h"
-#include "display.h"
+#include "../hmi/display.h"
 
 // uint8_t react_code[] =
 //     {
-//         START,
-//         LED_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
-//         TIMER_HOLD, 0, 3, ARGS::TRUE,
-//         LED_EFFECT, LED_EFFECTS::EFFECT_MUSIC,
-//         TIMER_HOLD, 0, 5, ARGS::TRUE,
-//         LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
-//         WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_RIGHT,
-//         FOOT_PRESS_LEFT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-//         FOOT_PRESS_RIGHT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-//         FOOT_PRESS_COUNTER_RESET,
-//         FOOT_PRESS_COUNTER, ARGS::TRUE,
-//         TIMER_HOLD, 0, 5, ARGS::FALSE,
-//         FOOT_PRESS_LEFT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-//         FOOT_PRESS_RIGHT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
-//         FOOT_PRESS_COUNTER, ARGS::TRUE,
-//         TIMER_HOLD, 0, 5, ARGS::TRUE,
-//         LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF,
-//         WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
-//         END};
+//         CMD_START,
+//         CMD_LED_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
+//         CMD_TIMER_HOLD, 0, 3, ARGS::TRUE,
+//         CMD_LED_EFFECT, LED_EFFECTS::EFFECT_MUSIC,
+//         CMD_TIMER_HOLD, 0, 5, ARGS::TRUE,
+//         CMD_LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
+//         CMD_WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_RIGHT,
+//         CMD_FOOT_PRESS_LEFT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+//         CMD_FOOT_PRESS_RIGHT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+//         CMD_FOOT_PRESS_COUNTER_RESET,
+//         CMD_FOOT_PRESS_COUNTER, ARGS::TRUE,
+//         CMD_TIMER_HOLD, 0, 5, ARGS::FALSE,
+//         CMD_FOOT_PRESS_LEFT_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+//         CMD_FOOT_PRESS_RIGHT_COLOR, (COLOR_PINK >> 16) & 0xFF, (COLOR_PINK >> 8) & 0xFF, COLOR_PINK & 0xFF, (COLOR_BLACK >> 16) & 0xFF, (COLOR_BLACK >> 8) & 0xFF, COLOR_BLACK & 0xFF,
+//         CMD_FOOT_PRESS_COUNTER, ARGS::TRUE,
+//         CMD_TIMER_HOLD, 0, 5, ARGS::TRUE,
+//         CMD_LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF,
+//         CMD_WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
+//         CMD_END};
 
 // uint8_t react_code[] =
 //     {
-//         START,
-//         LED_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
-//         TIMER_HOLD, 0, 3, ARGS::TRUE,
-//         LED_EFFECT, LED_EFFECTS::EFFECT_MUSIC,
-//         TIMER_HOLD, 0, 5, ARGS::TRUE,
-//         END,
+//         CMD_START,
+//         CMD_LED_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
+//         CMD_TIMER_HOLD, 0, 3, ARGS::TRUE,
+//         CMD_LED_EFFECT, LED_EFFECTS::EFFECT_MUSIC,
+//         CMD_TIMER_HOLD, 0, 5, ARGS::TRUE,
+//         CMD_END,
 //     };
 
-// const uint8_t react_code[] = {
-//     0x80, 0xA0, 0x00, 0x80, 0x00, 0x83, 0x00, 0x03, 0x20, 0xA2, 0x23, 0x83, 0x00, 0x05,
-//     0x20, 0xA0, 0xFF, 0x00, 0x00, 0x82, 0x42, 0xB1, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
-//     0xB2, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB6, 0xB3, 0x20, 0x83, 0x00, 0x05, 0x20,
-//     0xB1, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB2, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
-//     0xB3, 0x20, 0x83, 0x00, 0x05, 0x20, 0xA0, 0x00, 0x00, 0xFF, 0x82, 0x41, 0x81
-// };
+const uint8_t react_code[] = {
+    0x80, 0xA0, 0x00, 0x80, 0x00, 0x83, 0x00, 0x03, 0x20, 0xA2, 0x23, 0x83, 0x00, 0x05,
+    0x20, 0xA0, 0xFF, 0x00, 0x00, 0x82, 0x42, 0xB1, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
+    0xB2, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB6, 0xB3, 0x20, 0x83, 0x00, 0x05, 0x20,
+    0xB1, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB2, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
+    0xB3, 0x20, 0x83, 0x00, 0x05, 0x20, 0xA0, 0x00, 0x00, 0xFF, 0x82, 0x41, 0x81
+};
 
 // below is a kind of TRAFFIC LIGHT code to illustrate TIMER non blocking command
-const uint8_t react_code[256] =
-    {
-        START,
-        LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
-        TIMER, 0, 3, ARGS::TRUE,
-        WAIT_EVENT, EVENT_APP_TIMER, 0, 2,
-        LED_COLOR, (COLOR_ORANGE >> 16) & 0xFF, (COLOR_ORANGE >> 8) & 0xFF, COLOR_ORANGE & 0xFF,
-        WAIT_EVENT, EVENT_APP_TIMER, 0, 1,
-        LED_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
-        WAIT_EVENT, EVENT_APP_TIMER, 0, 0,
-        LED_COLOR, (COLOR_WHITE >> 16) & 0xFF, (COLOR_WHITE >> 8) & 0xFF, COLOR_WHITE & 0xFF,
-        WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
-        END};
+// const uint8_t react_code[256] =
+//     {
+//         CMD_START,
+//         CMD_LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
+//         CMD_TIMER, 0, 3, ARGS::TRUE,
+//         CMD_WAIT_EVENT, EVENT_APP_TIMER, 0, 2,
+//         CMD_LED_COLOR, (COLOR_ORANGE >> 16) & 0xFF, (COLOR_ORANGE >> 8) & 0xFF, COLOR_ORANGE & 0xFF,
+//         CMD_WAIT_EVENT, EVENT_APP_TIMER, 0, 1,
+//         CMD_LED_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
+//         CMD_WAIT_EVENT, EVENT_APP_TIMER, 0, 0,
+//         CMD_LED_COLOR, (COLOR_WHITE >> 16) & 0xFF, (COLOR_WHITE >> 8) & 0xFF, COLOR_WHITE & 0xFF,
+//         CMD_WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
+//         CMD_END};
 
 static int pc = 0;
 static int last_pc = 0;
@@ -291,7 +291,7 @@ void handleTimerHoldCommand(uint8_t *bytecode)
         // removing all other display
         const size_t MAX_RESULTS = 10;
         ASYNC_COMMANDS *resultItems[MAX_RESULTS];
-        size_t itemCount = asyncCommandsList.getItemsByCommandCode(COMMANDS::FOOT_PRESS_COUNTER, resultItems, MAX_RESULTS);
+        size_t itemCount = asyncCommandsList.getItemsByCommandCode(CMD_FOOT_PRESS_COUNTER, resultItems, MAX_RESULTS);
         for (size_t i = 0; i < itemCount; i++)
         {
             resultItems[i]->active = false;
@@ -319,7 +319,7 @@ void handleTimerCommand(uint8_t *bytecode)
         // removing all other display
         const size_t MAX_RESULTS = 10;
         ASYNC_COMMANDS *resultItems[MAX_RESULTS];
-        size_t itemCount = asyncCommandsList.getItemsByCommandCode(COMMANDS::FOOT_PRESS_COUNTER, resultItems, MAX_RESULTS);
+        size_t itemCount = asyncCommandsList.getItemsByCommandCode(CMD_FOOT_PRESS_COUNTER, resultItems, MAX_RESULTS);
         for (size_t i = 0; i < itemCount; i++)
         {
             resultItems[i]->active = false;
@@ -340,8 +340,8 @@ void handleFootPressCounterCommand(uint8_t *bytecode)
     bool enable = (bytecode[pc] == ARGS::TRUE) ? true : false;
     pc = pc + 1;
     uint32_t params[2] = {enable, 0};
-    handleAsyncCommand(COMMANDS::FOOT_PRESS_COUNTER, EVENT_APP_TYPE_FOOT_PRESS_LEFT, &update_react_device_foot_press_counter, params);
-    handleAsyncCommand(COMMANDS::FOOT_PRESS_COUNTER, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, &update_react_device_foot_press_counter, params);
+    handleAsyncCommand(CMD_FOOT_PRESS_COUNTER, EVENT_APP_TYPE_FOOT_PRESS_LEFT, &update_react_device_foot_press_counter, params);
+    handleAsyncCommand(CMD_FOOT_PRESS_COUNTER, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, &update_react_device_foot_press_counter, params);
     timer_display = false;
     display_clear();
     if (enable == true)
@@ -390,45 +390,45 @@ void interpret_command(uint8_t *bytecode)
     pc = pc + 1;
     switch (command)
     {
-    case START:
+    case CMD_START:
         handleStartCommand();
         break;
-    case END:
+    case CMD_END:
         handleEndCommand();
         break;
-    case WAIT_EVENT:
+    case CMD_WAIT_EVENT:
         handleWaitEventCommand(bytecode);
         break;
-    case TIMER_HOLD:
+    case CMD_TIMER_HOLD:
         handleTimerHoldCommand(bytecode);
         break;
-    case TIMER:
+    case CMD_TIMER:
         handleTimerCommand(bytecode);
         break;
-    case SEND_EVENT:
+    case CMD_SEND_EVENT:
         Log.noticeln(F("react_engine: Command SEND_EVENT NOT IMPLEMENTED"));
         // Handle SEND command
         break;
-    case LED_COLOR:
+    case CMD_LED_COLOR:
         handleLedColorCommand(bytecode);
         break;
-    case FOOT_PRESS_LEFT_COLOR:
+    case CMD_FOOT_PRESS_LEFT_COLOR:
         handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_LEFT, EVENT_APP_TYPE_FOOT_RELEASE_LEFT);
         break;
-    case FOOT_PRESS_RIGHT_COLOR:
+    case CMD_FOOT_PRESS_RIGHT_COLOR:
         handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, EVENT_APP_TYPE_FOOT_RELEASE_RIGHT);
         break;
-    case FOOT_PRESS_COLOR:
+    case CMD_FOOT_PRESS_COLOR:
         handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_LEFT, EVENT_APP_TYPE_FOOT_RELEASE_LEFT);
         handleFootPressColorCommand(bytecode, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, EVENT_APP_TYPE_FOOT_RELEASE_RIGHT);
         break;
-    case FOOT_PRESS_COUNTER:
+    case CMD_FOOT_PRESS_COUNTER:
         handleFootPressCounterCommand(bytecode);
         break;
-    case FOOT_PRESS_COUNTER_RESET:
+    case CMD_FOOT_PRESS_COUNTER_RESET:
         handleFootPressCounterResetCommand(bytecode);
         break;
-    case LED_EFFECT:
+    case CMD_LED_EFFECT:
         handleLedEffectCommand(bytecode);
         break;
     default:
@@ -503,7 +503,7 @@ void react_engine_task()
         re_state = RE_RUN;
         event_registry_enable_app_event();
     case RE_RUN:
-        interpret_command(react_code);
+        interpret_command((uint8_t *)react_code);
         handle_application_events();
         break;
     case RE_HOLD_TIMER_ENABLE:

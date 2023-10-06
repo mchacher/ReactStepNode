@@ -2,7 +2,6 @@
 #define EVENT_TYPE_H
 
 #include "Arduino.h"
-#include "queue.h"
 
 // Define an enumeration to represent system event types with hex values
 typedef enum {

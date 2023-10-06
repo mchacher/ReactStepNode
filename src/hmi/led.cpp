@@ -1,14 +1,15 @@
 #include <Arduino.h>
-#include <WS2812.h>
 #include "led.h"
 #include "ArduinoLog.h"
-#include "hardware_config.h"
-#include "mic.h"
+#include "../hardware_config.h"
+#include "../drivers/mic.h"
+
+#include <drivers/strip_led.h>
 
 // use the cRGB struct hsv method
 #define USE_HSV
 
-WS2812 strip_led(NUM_LEDS);
+StripLed strip_led(NUM_LEDS);
 
 uint32_t current_color = 0x000000; // black
 
@@ -39,7 +40,7 @@ void effect_rainbow()
   static byte t;
   for (int i = 0; i < NUM_LEDS; i++)
   {
-    byte hue = NUM_LEDS + t;
+    byte hue = t;
     strip_led.setHSV(i, hue, 255, 255);
   }
   t++;
@@ -68,12 +69,13 @@ void effect_music()
   {
     // Calculate the average mic value
     uint16_t mic_average = mic_sum / SAMPLES;
-
+    // Log.noticeln("mic_average %i", mic_average);
     // Map mic_average to the range of color hues
-    int hueIndex = map(mic_average, 0, 255, 0, 7);
+    int hueIndex = map(mic_average, 0, 400, 0, 7);
     uint8_t saturation = 255;
     uint8_t value = 255;
-
+    if (hueIndex > 0)
+      Log.noticeln("mic_average %i, hueIndex %i", mic_average, hueIndex);
     if (hueIndex == 0)
     {
       saturation = 0;
@@ -122,7 +124,7 @@ void led_task()
       break;
     }
   }
-  strip_led.sync();
+  strip_led.show();
 }
 
 /**
@@ -130,7 +132,7 @@ void led_task()
  */
 void led_setup()
 {
-  Log.notice(F("led: setup" CR));
-  strip_led.setOutput(PIN_LED_DATA);
+  Log.noticeln(F("led: setup"));
+  strip_led.setPin(PIN_LED_DATA);
   strip_led.setBrightness(64);
 }

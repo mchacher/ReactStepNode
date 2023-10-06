@@ -1,3 +1,5 @@
+#ifdef ATMEGA328P
+
 #ifndef WS2812_H_
 #define WS2812_H_
 
@@ -109,6 +111,6 @@ private:
 #endif
 };
 
+#endif
 
-
-#endif /* WS2812_H_ */
+#endif

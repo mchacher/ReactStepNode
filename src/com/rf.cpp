@@ -6,9 +6,8 @@
 
 namespace communication
 {
-  const rf24_gpio_pin_t rf::PIN_CE = 7;
-  const rf24_gpio_pin_t rf::PIN_CSN = 8;
   const uint8_t rf::DEFAULT_NODE_ID = 2;
+  arduino::MbedSPI SPI0(PIN_MISO, PIN_MOSI, PIN_SCK);
 
   rf::rf() : mRadio(PIN_CE, PIN_CSN),
              mNetwork(mRadio),
@@ -21,7 +20,13 @@ namespace communication
   void rf::setup()
   {
     Log.noticeln(F("[%s] Node ID [%d]"), __func__, mNodeId);
-
+    SPI0.begin();
+    if (!mRadio.begin(&SPI0))
+    {
+      Log.noticeln(F("radio hardware is not responding!!"));
+      while (1)
+        ;
+    }
     // Connect to the mesh
     if (!mMesh.begin())
     {

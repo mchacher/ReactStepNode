@@ -1,8 +1,8 @@
 #include "Arduino.h"
 #include "foot_sensor.h"
 #include <ArduinoLog.h>
-#include "event_registry.h"
-#include "hardware_config.h"
+#include "../reactmagic/event_registry.h"
+#include "../hardware_config.h"
 
 #if (DIGITAL_FOOT_SENSOR == 1)
 

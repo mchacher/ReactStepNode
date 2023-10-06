@@ -4,7 +4,7 @@
 #include <ArduinoLog.h>
 #include "hardware_config.h"
 #include "state_machine.h"
-#include "queue.h"
+#include "utils/queue.h"
 
 TM1637TinyDisplay display(PIN_TM_1637_CLK, PIN_TM_1637_DIO);
 

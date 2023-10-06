@@ -42,8 +42,6 @@ private:
 
   uint8_t mNodeId;
 
-  static const rf24_gpio_pin_t PIN_CE;
-  static const rf24_gpio_pin_t PIN_CSN;
   static const uint8_t DEFAULT_NODE_ID;
 };
 }

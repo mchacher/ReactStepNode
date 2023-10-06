@@ -2,7 +2,7 @@
 #define EVENT_QUEUE_H
 
 #include "Arduino.h"
-#include "queue.h" // Include the original Queue class
+#include "../utils/queue.h" // Include the original Queue class
 #include "event_type.h"
 #include "ArduinoLog.h"
 

@@ -7,16 +7,16 @@
 #include "hardware_config.h"
 #include <printf.h>
 #include "state_machine.h"
-#include "led.h"
-#include "react_engine.h"
-#include "event_registry.h"
-#include "foot_sensor.h"
-#include "display.h"
-#include "button.h"
+#include "hmi/led.h"
+#include "reactmagic/react_engine.h"
+#include "reactmagic/event_registry.h"
+#include "hmi/foot_sensor.h"
+#include "hmi/display.h"
+#include "hmi/button.h"
 #include "react_scheduler.h"
-#include "mic.h"
+#include "drivers/mic.h"
 #if REACT_MESH == 1
-#include "rf.h"
+#include "com/rf.h"
 #endif
 
 #define TASK_CYCLE_FAST 20
