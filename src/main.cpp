@@ -108,9 +108,9 @@ void handle_ready_state(EVENT event)
   case EVENT_SYS_TYPE_START:
     state_machine_switch_state(RUN);
     Log.noticeln(F("state_machine_task: switching to RUN state" CR));
+    led_set_color(COLOR_BLACK);
     task_react_engine.enable();
     display_message(MSG_GO, 2);
-    led_set_color(COLOR_BLACK);
     break;
   case EVENT_SYS_TYPE_SET_LP:
     state_machine_switch_state(SET);
@@ -119,6 +119,20 @@ void handle_ready_state(EVENT event)
     display_number(comm.getNodeId());
 #endif
     display_blink_numbers(true);
+    break;
+  default:
+    break;
+  }
+}
+
+void handle_pause_state(EVENT event)
+{
+  switch (event.type)
+  {
+  case EVENT_SYS_TYPE_START:
+    state_machine_switch_state(RUN);
+    Log.noticeln(F("state_machine_task: switching to RUN state" CR));
+    task_react_engine.enable();
     break;
   default:
     break;
@@ -144,12 +158,12 @@ void handle_run_state(EVENT event)
     break;
 
   case EVENT_SYS_TYPE_START:
-    state_machine_switch_state(READY);
-    Log.noticeln(F("state_machine_task: PAUSE event, switching to READY state" CR));
+    state_machine_switch_state(PAUSE);
+    Log.noticeln(F("state_machine_task: PAUSE event, switching to PAUSE state" CR));
     task_react_engine.disable();
     react_engine_pause();
     display_message(MSG_PAUSE);
-    led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
+    // led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
     break;
 
   case EVENT_SYS_TYPE_PAUSE:
@@ -211,7 +225,7 @@ void state_machine_task()
     case PAUSE:
       // Handle PAUSE state
       // Transition to the next state if needed
-      state_machine_switch_state(READY);
+      handle_pause_state(event);
       break;
     default:
       // Handle any unexpected or error state

@@ -16,6 +16,14 @@ typedef enum
     RE_HOLD_WAIT_APP_EVENT   // Program is on-hold, waiting for a timer event
 } RE_STATE;
 
+typedef struct {
+    int pc;
+    uint16_t timer;
+    RE_STATE state;
+} CONTEXT;
+
+
+
 void react_engine_setup();
 void react_engine_task();
 void react_engine_stop();

@@ -45,8 +45,7 @@ const uint8_t react_code[] = {
     0x20, 0xA0, 0xFF, 0x00, 0x00, 0x82, 0x42, 0xB1, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
     0xB2, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB6, 0xB3, 0x20, 0x83, 0x00, 0x05, 0x20,
     0xB1, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB2, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
-    0xB3, 0x20, 0x83, 0x00, 0x05, 0x20, 0xA0, 0x00, 0x00, 0xFF, 0x82, 0x41, 0x81
-};
+    0xB3, 0x20, 0x83, 0x00, 0x05, 0x20, 0xA0, 0x00, 0x00, 0xFF, 0x82, 0x41, 0x81};
 
 // below is a kind of TRAFFIC LIGHT code to illustrate TIMER non blocking command
 // const uint8_t react_code[256] =
@@ -64,18 +63,19 @@ const uint8_t react_code[] = {
 //         CMD_END};
 
 static int pc = 0;
-static int last_pc = 0;
+// static int last_pc = 0;
 static unsigned long last_command_time = 0;
 static uint16_t timer = 0;
 static EVENT waited_app_event;
 static unsigned long waited_app_event_time;
 static RE_STATE re_state = RE_IDLE;
-static uint16_t tick = 0;
 static uint16_t foot_press_counter = 0;
 static bool timer_display = false;
 
 #define MAX_ASYNC_COMMANDS 10
 AsyncCommandsList<MAX_ASYNC_COMMANDS> asyncCommandsList;
+
+static CONTEXT saved_context;
 
 /**
  * @brief Change the color of the LED based on parameters. This is an Async React Command.
@@ -272,35 +272,6 @@ void handleLedTrafficLightCommand(uint8_t *bytecode)
 }
 
 /**
- * @brief Handle the TIMER_HOLD command.
- *
- * @param bytecode The bytecode containing the command and its arguments.
- */
-void handleTimerHoldCommand(uint8_t *bytecode)
-{
-    // Handle TIMER_HOLD command with args
-    Log.noticeln(F("react_engine: Command TIMER_HOLD %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    timer = (uint16_t)(bytecode[pc] << 8);
-    timer |= bytecode[pc + 1];
-    timer_display = (bytecode[pc + 2] == ARGS::TRUE) ? true : false;
-    pc = pc + 3;
-    re_state = RE_HOLD_TIMER_ENABLE;
-    if (timer_display)
-    {
-        // removing all other display
-        const size_t MAX_RESULTS = 10;
-        ASYNC_COMMANDS *resultItems[MAX_RESULTS];
-        size_t itemCount = asyncCommandsList.getItemsByCommandCode(CMD_FOOT_PRESS_COUNTER, resultItems, MAX_RESULTS);
-        for (size_t i = 0; i < itemCount; i++)
-        {
-            resultItems[i]->active = false;
-        }
-        display_number(timer);
-    }
-}
-
-/**
  * @brief Handle the TIMER command.
  *
  * @param bytecode The bytecode containing the command and its arguments.
@@ -324,8 +295,20 @@ void handleTimerCommand(uint8_t *bytecode)
         {
             resultItems[i]->active = false;
         }
-        display_number(timer);
     }
+}
+
+/**
+ * @brief Handle the TIMER_HOLD command.
+ *
+ * @param bytecode The bytecode containing the command and its arguments.
+ */
+void handleTimerHoldCommand(uint8_t *bytecode)
+{
+    // Handle TIMER_HOLD command with args
+    Log.noticeln(F("react_engine: Command TIMER_HOLD (calling TIMER command and switching to HOLD state) %l ms"), millis() - last_command_time);
+    handleTimerCommand(bytecode);
+    re_state = RE_HOLD_TIMER_ENABLE;
 }
 
 /**
@@ -386,7 +369,6 @@ void handleLedEffectCommand(uint8_t *bytecode)
 void interpret_command(uint8_t *bytecode)
 {
     uint8_t command = bytecode[pc];
-    last_pc = pc;
     pc = pc + 1;
     switch (command)
     {
@@ -464,15 +446,23 @@ void react_engine_stop()
  */
 void react_engine_pause()
 {
-    re_state = RE_PAUSE;
+    saved_context.pc = pc;
+    saved_context.state = re_state;
+    saved_context.timer = timer;
     event_registry_disable_app_event();
+    re_state = RE_PAUSE;
 }
 
 void task_timer()
 {
     static EVENT e;
+    static uint16_t tick = 0;
     if (timer > 0)
     {
+        if ((timer_display) && (tick == 0))
+        {
+            display_number(timer);
+        }
         tick++;
         if ((tick * REACT_ENGINE_CYCLE_TIME) == 1000) // 1s
         {
@@ -482,10 +472,6 @@ void task_timer()
             e.type = EVENT_APP_TIMER;
             e.value = timer;
             event_registry_push_app_event(e);
-            if (timer_display)
-            {
-                display_number(timer);
-            }
             tick = 0;
         }
     }
@@ -502,6 +488,7 @@ void react_engine_task()
     case RE_READY:
         re_state = RE_RUN;
         event_registry_enable_app_event();
+        break;
     case RE_RUN:
         interpret_command((uint8_t *)react_code);
         handle_application_events();
@@ -512,20 +499,6 @@ void react_engine_task()
         {
             re_state = RE_RUN;
         }
-        // tick++;
-        // if ((tick * REACT_ENGINE_CYCLE_TIME) == 1000) // 1s
-        // {
-        //     timer = timer - 1;
-        //     if (timer_display)
-        //     {
-        //         display_number(timer);
-        //     }
-        //     if (timer == 0)
-        //     {
-        //         re_state = RE_RUN;
-        //     }
-        //     tick = 0;
-        // }
         break;
     case RE_HOLD_WAIT_APP_EVENT:
         EVENT app_event;
@@ -546,7 +519,13 @@ void react_engine_task()
         }
         break;
     case RE_PAUSE:
-        pc = last_pc;
-        re_state = RE_READY;
+        // restoring context
+        pc = saved_context.pc;
+        re_state = saved_context.state;
+        timer = saved_context.timer;
+        event_registry_enable_app_event();
+        break;
+    default:
+        break;
     }
 }
