@@ -459,11 +459,6 @@ void task_timer()
     static uint16_t tick = 0;
     if (timer > 0)
     {
-        if ((timer_display) && (tick == 0))
-        {
-            display_number(timer);
-        }
-        tick++;
         if ((tick * REACT_ENGINE_CYCLE_TIME) == 1000) // 1s
         {
             timer = timer - 1;
@@ -473,7 +468,12 @@ void task_timer()
             e.value = timer;
             event_registry_push_app_event(e);
             tick = 0;
+            if (timer_display)
+            {
+                display_number(timer);
+            }
         }
+        tick++;
     }
 }
 
