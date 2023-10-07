@@ -45,19 +45,19 @@
 //         CMD_START,
 //         CMD_REPEAT_COUNT, 0, 3, ARGS::TRUE,
 //         CMD_LED_COLOR, (COLOR_GREEN >> 16) & 0xFF,(COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
-//         CMD_TIMER_HOLD, 0, 2, ARGS::FALSE,
+//         CMD_TIMER_HOLD, 0, 1, ARGS::FALSE,
 //         CMD_LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
-//         CMD_TIMER_HOLD, 0, 2, ARGS::FALSE,
+//         CMD_TIMER_HOLD, 0, 1, ARGS::FALSE,
 //         CMD_REPEAT_END,
-//         CMD_LED_EFFECT, LED_EFFECTS::EFFECT_MUSIC,
-//         CMD_TIMER_HOLD, 0, 5, ARGS::TRUE,
+//         CMD_LED_COLOR, (COLOR_BLUE >> 16) & 0xFF, (COLOR_BLUE >> 8) & 0xFF, COLOR_BLUE & 0xFF,
+//         CMD_WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
 //         CMD_END,
 // };
 
 const uint8_t react_code[] = {
 0x80, 0x85, 0x00, 0x03, 0x20, 0xA0, 0x00, 0x80, 
-0x00, 0x83, 0x00, 0x03, 0x21, 0xA0, 0xFF, 0x00, 
-0x00, 0x83, 0x00, 0x03, 0x21, 0x86, 0xA0, 0x00, 
+0x00, 0x83, 0x00, 0x01, 0x21, 0xA0, 0xFF, 0x00, 
+0x00, 0x83, 0x00, 0x01, 0x21, 0x86, 0xA0, 0x00, 
 0x00, 0xFF, 0x82, 0x41, 0x81
 };
 
@@ -406,11 +406,7 @@ void handleRepeatEndCommand(uint8_t *bytecode)
     Log.noticeln(F("react_engine: Command REPEAT_END %l ms"), millis() - last_command_time);
     last_command_time = millis();
     repeat_count--;
-    if (repeat_count == 0)
-    {
-        pc = pc + 1;
-    }
-    else
+    if (repeat_count != 0)
     {
         pc = repeat_pc;
     }
@@ -585,10 +581,12 @@ void react_engine_task()
         break;
     case RE_PAUSE:
         // restoring context
+        display_clear();
         pc = saved_context.pc;
         re_state = saved_context.state;
         timer = saved_context.timer;
         event_registry_enable_app_event();
+
         break;
     default:
         break;
