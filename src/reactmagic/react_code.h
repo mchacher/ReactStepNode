@@ -10,6 +10,8 @@ typedef enum {
     CMD_WAIT_EVENT = 0x82,
     CMD_TIMER_HOLD = 0x83,
     CMD_TIMER = 0x84,
+    CMD_REPEAT_COUNT = 0x85,
+    CMD_REPEAT_END = 0x86,
     CMD_LED_COLOR = 0xA0,
     CMD_LED_TRAFFIC_LIGHT = 0xA1,
     CMD_LED_EFFECT = 0xA2,

@@ -40,12 +40,34 @@
 //         CMD_END,
 //     };
 
+// uint8_t react_code[] =
+//     {
+//         CMD_START,
+//         CMD_REPEAT_COUNT, 0, 3, ARGS::TRUE,
+//         CMD_LED_COLOR, (COLOR_GREEN >> 16) & 0xFF,(COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
+//         CMD_TIMER_HOLD, 0, 2, ARGS::FALSE,
+//         CMD_LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
+//         CMD_TIMER_HOLD, 0, 2, ARGS::FALSE,
+//         CMD_REPEAT_END,
+//         CMD_LED_EFFECT, LED_EFFECTS::EFFECT_MUSIC,
+//         CMD_TIMER_HOLD, 0, 5, ARGS::TRUE,
+//         CMD_END,
+// };
+
 const uint8_t react_code[] = {
-    0x80, 0xA0, 0x00, 0x80, 0x00, 0x83, 0x00, 0x03, 0x20, 0xA2, 0x23, 0x83, 0x00, 0x05,
-    0x20, 0xA0, 0xFF, 0x00, 0x00, 0x82, 0x42, 0xB1, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
-    0xB2, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB6, 0xB3, 0x20, 0x83, 0x00, 0x05, 0x20,
-    0xB1, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB2, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
-    0xB3, 0x20, 0x83, 0x00, 0x05, 0x20, 0xA0, 0x00, 0x00, 0xFF, 0x82, 0x41, 0x81};
+0x80, 0x85, 0x00, 0x03, 0x20, 0xA0, 0x00, 0x80, 
+0x00, 0x83, 0x00, 0x03, 0x21, 0xA0, 0xFF, 0x00, 
+0x00, 0x83, 0x00, 0x03, 0x21, 0x86, 0xA0, 0x00, 
+0x00, 0xFF, 0x82, 0x41, 0x81
+};
+
+
+// const uint8_t react_code[] = {
+//     0x80, 0xA0, 0x00, 0x80, 0x00, 0x83, 0x00, 0x03, 0x20, 0xA2, 0x23, 0x83, 0x00, 0x05,
+//     0x20, 0xA0, 0xFF, 0x00, 0x00, 0x82, 0x42, 0xB1, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
+//     0xB2, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB6, 0xB3, 0x20, 0x83, 0x00, 0x05, 0x20,
+//     0xB1, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB2, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
+//     0xB3, 0x20, 0x83, 0x00, 0x05, 0x20, 0xA0, 0x00, 0x00, 0xFF, 0x82, 0x41, 0x81};
 
 // below is a kind of TRAFFIC LIGHT code to illustrate TIMER non blocking command
 // const uint8_t react_code[256] =
@@ -63,7 +85,7 @@ const uint8_t react_code[] = {
 //         CMD_END};
 
 static int pc = 0;
-// static int last_pc = 0;
+static int repeat_pc = 0;
 static unsigned long last_command_time = 0;
 static uint16_t timer = 0;
 static EVENT waited_app_event;
@@ -71,6 +93,8 @@ static unsigned long waited_app_event_time;
 static RE_STATE re_state = RE_IDLE;
 static uint16_t foot_press_counter = 0;
 static bool timer_display = false;
+static uint16_t repeat_count = 0;
+static bool repeat_count_display = false;
 
 #define MAX_ASYNC_COMMANDS 10
 AsyncCommandsList<MAX_ASYNC_COMMANDS> asyncCommandsList;
@@ -361,6 +385,41 @@ void handleLedEffectCommand(uint8_t *bytecode)
     led_set_effect((LED_EFFECTS)effect);
 }
 
+void handleRepeatCountCommand(uint8_t *bytecode)
+{
+    Log.noticeln(F("react_engine: Command REPEAT_COUNT %l ms"), millis() - last_command_time);
+    last_command_time = millis();
+    repeat_count = (uint16_t)(bytecode[pc] << 8);
+    repeat_count |= bytecode[pc + 1];
+    repeat_count_display = (bytecode[pc + 2] == ARGS::TRUE) ? true : false;
+    // TODO manage centrally all types of display
+    if (repeat_count_display == true)
+    {
+        display_number(repeat_count);
+    }
+    pc = pc + 3;
+    repeat_pc = pc;
+}
+
+void handleRepeatEndCommand(uint8_t *bytecode)
+{
+    Log.noticeln(F("react_engine: Command REPEAT_END %l ms"), millis() - last_command_time);
+    last_command_time = millis();
+    repeat_count--;
+    if (repeat_count == 0)
+    {
+        pc = pc + 1;
+    }
+    else
+    {
+        pc = repeat_pc;
+    }
+    if (repeat_count_display == true)
+    {
+        display_number(repeat_count);
+    }
+}
+
 /**
  * @brief Interpret and execute commands with arguments.
  *
@@ -386,6 +445,12 @@ void interpret_command(uint8_t *bytecode)
         break;
     case CMD_TIMER:
         handleTimerCommand(bytecode);
+        break;
+    case CMD_REPEAT_COUNT:
+        handleRepeatCountCommand(bytecode);
+        break;
+    case CMD_REPEAT_END:
+        handleRepeatEndCommand(bytecode);
         break;
     case CMD_SEND_EVENT:
         Log.noticeln(F("react_engine: Command SEND_EVENT NOT IMPLEMENTED"));
