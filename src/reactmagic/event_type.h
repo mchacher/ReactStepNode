@@ -13,6 +13,7 @@ typedef enum {
     EVENT_SYS_TYPE_SET_LP   = 0x14,  // SET event, with long press
     EVENT_SYS_TYPE_SET_SP   = 0x15,  // SET event, with short press
     EVENT_SYS_TYPE_READY    = 0x16,  // product is ready to operate after init phase
+    EVENT_SYS_TYPE_DONE     = 0x17,  // product has completed the execution of a React Code
     // Add more system event types as needed with appropriate hex values
     // ...
     EVENT_SYS_TYPE_RESET    = 0x3F,

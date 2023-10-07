@@ -12,6 +12,7 @@ const PROGMEM char MSG_GO[] = " GO ";
 const PROGMEM char MSG_ERROR[] = "ERROR";
 const PROGMEM char MSG_SET[] = " SET";
 const PROGMEM char MSG_IDLE[] = "----";
+const PROGMEM char MSG_DONE[] = "DONE";
 
 struct QueuedMessage
 {

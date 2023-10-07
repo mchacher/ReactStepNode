@@ -54,13 +54,14 @@
 //         CMD_END,
 // };
 
-const uint8_t react_code[] = {
-0x80, 0x85, 0x00, 0x03, 0x20, 0xA0, 0x00, 0x80, 
-0x00, 0x83, 0x00, 0x01, 0x21, 0xA0, 0xFF, 0x00, 
-0x00, 0x83, 0x00, 0x01, 0x21, 0x86, 0xA0, 0x00, 
-0x00, 0xFF, 0x82, 0x41, 0x81
-};
-
+// const uint8_t react_code[] = {
+// 0x80, 0x85, 0x00, 0x03, 0x20, 0xA0, 0xFF, 0xFF, 
+// 0x00, 0x83, 0x00, 0x02, 0x21, 0x85, 0x00, 0x02, 
+// 0x21, 0xA0, 0x00, 0x80, 0x00, 0x83, 0x00, 0x02, 
+// 0x21, 0xA0, 0xFF, 0x00, 0x00, 0x83, 0x00, 0x02, 
+// 0x21, 0x86, 0x86, 0xA0, 0x00, 0x00, 0xFF, 0x82, 
+// 0x41, 0x81
+// };
 
 // const uint8_t react_code[] = {
 //     0x80, 0xA0, 0x00, 0x80, 0x00, 0x83, 0x00, 0x03, 0x20, 0xA2, 0x23, 0x83, 0x00, 0x05,
@@ -70,36 +71,31 @@ const uint8_t react_code[] = {
 //     0xB3, 0x20, 0x83, 0x00, 0x05, 0x20, 0xA0, 0x00, 0x00, 0xFF, 0x82, 0x41, 0x81};
 
 // below is a kind of TRAFFIC LIGHT code to illustrate TIMER non blocking command
-// const uint8_t react_code[256] =
-//     {
-//         CMD_START,
-//         CMD_LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
-//         CMD_TIMER, 0, 3, ARGS::TRUE,
-//         CMD_WAIT_EVENT, EVENT_APP_TIMER, 0, 2,
-//         CMD_LED_COLOR, (COLOR_ORANGE >> 16) & 0xFF, (COLOR_ORANGE >> 8) & 0xFF, COLOR_ORANGE & 0xFF,
-//         CMD_WAIT_EVENT, EVENT_APP_TIMER, 0, 1,
-//         CMD_LED_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
-//         CMD_WAIT_EVENT, EVENT_APP_TIMER, 0, 0,
-//         CMD_LED_COLOR, (COLOR_WHITE >> 16) & 0xFF, (COLOR_WHITE >> 8) & 0xFF, COLOR_WHITE & 0xFF,
-//         CMD_WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
-//         CMD_END};
+const uint8_t react_code[256] =
+    {
+        CMD_START,
+        CMD_TIMER, 0, 3, ARGS::TRUE,
+        CMD_LED_COLOR, (COLOR_RED >> 16) & 0xFF, (COLOR_RED >> 8) & 0xFF, COLOR_RED & 0xFF,
+        CMD_WAIT_EVENT, EVENT_APP_TIMER, 0, 2,
+        CMD_LED_COLOR, (COLOR_ORANGE >> 16) & 0xFF, (COLOR_ORANGE >> 8) & 0xFF, COLOR_ORANGE & 0xFF,
+        CMD_WAIT_EVENT, EVENT_APP_TIMER, 0, 1,
+        CMD_LED_COLOR, (COLOR_GREEN >> 16) & 0xFF, (COLOR_GREEN >> 8) & 0xFF, COLOR_GREEN & 0xFF,
+        CMD_WAIT_EVENT, EVENT_APP_TIMER, 0, 0,
+        CMD_LED_COLOR, (COLOR_WHITE >> 16) & 0xFF, (COLOR_WHITE >> 8) & 0xFF, COLOR_WHITE & 0xFF,
+        CMD_WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
+        CMD_END};
 
-static int pc = 0;
-static int repeat_pc = 0;
-static unsigned long last_command_time = 0;
-static uint16_t timer = 0;
-static EVENT waited_app_event;
-static unsigned long waited_app_event_time;
-static RE_STATE re_state = RE_IDLE;
-static uint16_t foot_press_counter = 0;
-static bool timer_display = false;
-static uint16_t repeat_count = 0;
-static bool repeat_count_display = false;
+
+
+static const int MAX_REPEAT_DEPTH = 5;
+static RepeatContext repeat_context[MAX_REPEAT_DEPTH];
+static uint8_t repeat_index = 0;
+static Context context;
+static Context saved_context;
 
 #define MAX_ASYNC_COMMANDS 10
 AsyncCommandsList<MAX_ASYNC_COMMANDS> asyncCommandsList;
 
-static CONTEXT saved_context;
 
 /**
  * @brief Change the color of the LED based on parameters. This is an Async React Command.
@@ -120,10 +116,10 @@ void change_react_device_color(uint32_t *params)
 void update_react_device_foot_press_counter(uint32_t *params)
 {
     Log.verboseln(F("react_engine: update_foot_press_counter"));
-    foot_press_counter++;
+    context.foot_press_counter++;
     if (params[0])
     {
-        display_number(foot_press_counter);
+        display_number(context.foot_press_counter);
     }
 }
 
@@ -201,8 +197,7 @@ void handleStartCommand()
 {
     // Handle START command
     Log.noticeln(F("---------------------------"));
-    Log.noticeln(F("react_engine: Command START - %l ms"), millis() - last_command_time);
-    last_command_time = millis();
+    Log.noticeln(F("react_engine: Command START"));
 }
 
 /**
@@ -211,9 +206,8 @@ void handleStartCommand()
 void handleEndCommand()
 {
     // Handle END command
-    Log.noticeln(F("react_engine: Command END - %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    pc = 0;
+    Log.noticeln(F("react_engine: Command END"));
+    event_registry_push(EVENT_SYS_TYPE_DONE);    
 }
 
 /**
@@ -223,19 +217,18 @@ void handleEndCommand()
  */
 void handleWaitEventCommand(uint8_t *bytecode)
 {
-    Log.noticeln(F("react_engine: Command WAIT_EVENT, event = %i - %l ms"), waited_app_event, millis() - last_command_time);
-    last_command_time = millis();
-    re_state = RE_HOLD_WAIT_APP_EVENT;
-    waited_app_event.type = (EVENT_TYPE)bytecode[pc];
-    waited_app_event.timestamp = millis();
-    pc = pc + 1;
+    Log.noticeln(F("react_engine: Command WAIT_EVENT, event = %i"), context.waited_app_event);
+    context.state = RE_HOLD_WAIT_APP_EVENT;
+    context.waited_app_event.type = (EVENT_TYPE)bytecode[context.pc];
+    context.waited_app_event.timestamp = millis();
+    context.pc = context.pc + 1;
     // if EVENT_APP_TIMER, last argument is the timer value in s (16 bits)
-    if (waited_app_event.type == EVENT_TYPE::EVENT_APP_TIMER)
+    if (context.waited_app_event.type == EVENT_TYPE::EVENT_APP_TIMER)
     {
-        waited_app_event.value = ((uint32_t)bytecode[pc] << 8);
-        waited_app_event.value |= bytecode[pc + 1];
-        Log.noticeln(F("react_engine: Command WAIT_EVENT - EVENT_APP_TIMER with timer value = %is "), waited_app_event.value);
-        pc = pc + 2;
+        context.waited_app_event.value = ((uint32_t)bytecode[context.pc] << 8);
+        context.waited_app_event.value |= bytecode[context.pc + 1];
+        Log.noticeln(F("react_engine: Command WAIT_EVENT - EVENT_APP_TIMER with timer value = %is "), context.waited_app_event.value);
+        context.pc = context.pc + 2;
     }
     event_registry_enable_app_event();
 }
@@ -247,12 +240,11 @@ void handleWaitEventCommand(uint8_t *bytecode)
  */
 void handleLedColorCommand(uint8_t *bytecode)
 {
-    Log.noticeln(F("react_engine: Command LED_COLOR - %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    uint32_t color = ((uint32_t)bytecode[pc] << 16);
-    color |= ((uint32_t)bytecode[pc + 1] << 8);
-    color |= bytecode[pc + 2];
-    pc = pc + 3;
+    Log.noticeln(F("react_engine: Command LED_COLOR"));
+    uint32_t color = ((uint32_t)bytecode[context.pc] << 16);
+    color |= ((uint32_t)bytecode[context.pc + 1] << 8);
+    color |= bytecode[context.pc + 2];
+    context.pc = context.pc + 3;
     led_set_color(color);
 }
 
@@ -264,17 +256,16 @@ void handleLedColorCommand(uint8_t *bytecode)
  */
 void handleFootPressColorCommand(uint8_t *bytecode, EVENT_TYPE eventPress, EVENT_TYPE eventRelease)
 {
-    Log.noticeln(F("react_engine: Command FOOT_PRESS_LEFT_COLOR - %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    uint8_t command = bytecode[pc - 1];
-    uint32_t press_color = ((uint32_t)bytecode[pc] << 16);
-    press_color |= ((uint32_t)bytecode[pc + 1] << 8);
-    press_color |= bytecode[pc + 2];
-    pc = pc + 3;
-    uint32_t release_color = ((uint32_t)bytecode[pc] << 16);
-    release_color |= ((uint32_t)bytecode[pc + 1] << 8);
-    release_color |= bytecode[pc + 2];
-    pc = pc + 3;
+    Log.noticeln(F("react_engine: Command FOOT_PRESS_LEFT_COLOR"));
+    uint8_t command = bytecode[context.pc - 1];
+    uint32_t press_color = ((uint32_t)bytecode[context.pc] << 16);
+    press_color |= ((uint32_t)bytecode[context.pc + 1] << 8);
+    press_color |= bytecode[context.pc + 2];
+    context.pc = context.pc + 3;
+    uint32_t release_color = ((uint32_t)bytecode[context.pc] << 16);
+    release_color |= ((uint32_t)bytecode[context.pc + 1] << 8);
+    release_color |= bytecode[context.pc + 2];
+    context.pc = context.pc + 3;
     // Define parameters for the handler function
     uint32_t params[2] = {press_color, 0};
     // Handle ASYNC_COMMANDS separately with parameters
@@ -290,8 +281,7 @@ void handleFootPressColorCommand(uint8_t *bytecode, EVENT_TYPE eventPress, EVENT
  */
 void handleLedTrafficLightCommand(uint8_t *bytecode)
 {
-    Log.noticeln(F("react_engine: Command LED_TRAFFIC_LIGHT - %l ms"), millis() - last_command_time);
-    last_command_time = millis();
+    Log.noticeln(F("react_engine: Command LED_TRAFFIC_LIGHT"));
     // Implement the functionality for LED_TRAFFIC_LIGHT command here
 }
 
@@ -303,13 +293,12 @@ void handleLedTrafficLightCommand(uint8_t *bytecode)
 void handleTimerCommand(uint8_t *bytecode)
 {
     // Handle TIMER command with args
-    Log.noticeln(F("react_engine: Command TIMER %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    timer = (uint16_t)(bytecode[pc] << 8);
-    timer |= bytecode[pc + 1];
-    timer_display = (bytecode[pc + 2] == ARGS::TRUE) ? true : false;
-    pc = pc + 3;
-    if (timer_display)
+    Log.noticeln(F("react_engine: Command TIMER"));
+    context.timer = (uint16_t)(bytecode[context.pc] << 8);
+    context.timer |= bytecode[context.pc + 1];
+    context.timer_display = (bytecode[context.pc + 2] == ARGS::TRUE) ? true : false;
+    context.pc = context.pc + 3;
+    if (context.timer_display)
     {
         // removing all other display
         const size_t MAX_RESULTS = 10;
@@ -319,6 +308,7 @@ void handleTimerCommand(uint8_t *bytecode)
         {
             resultItems[i]->active = false;
         }
+        display_number(context.timer);
     }
 }
 
@@ -330,9 +320,9 @@ void handleTimerCommand(uint8_t *bytecode)
 void handleTimerHoldCommand(uint8_t *bytecode)
 {
     // Handle TIMER_HOLD command with args
-    Log.noticeln(F("react_engine: Command TIMER_HOLD (calling TIMER command and switching to HOLD state) %l ms"), millis() - last_command_time);
+    Log.noticeln(F("react_engine: Command TIMER_HOLD (calling TIMER command and switching to HOLD state"));
     handleTimerCommand(bytecode);
-    re_state = RE_HOLD_TIMER_ENABLE;
+    context.state = RE_HOLD_TIMER_ENABLE;
 }
 
 /**
@@ -342,18 +332,17 @@ void handleTimerHoldCommand(uint8_t *bytecode)
  */
 void handleFootPressCounterCommand(uint8_t *bytecode)
 {
-    Log.noticeln(F("react_engine: Command FOOT_PRESS_COUNTER - %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    bool enable = (bytecode[pc] == ARGS::TRUE) ? true : false;
-    pc = pc + 1;
+    Log.noticeln(F("react_engine: Command FOOT_PRESS_COUNTER"));
+    bool enable = (bytecode[context.pc] == ARGS::TRUE) ? true : false;
+    context.pc = context.pc + 1;
     uint32_t params[2] = {enable, 0};
     handleAsyncCommand(CMD_FOOT_PRESS_COUNTER, EVENT_APP_TYPE_FOOT_PRESS_LEFT, &update_react_device_foot_press_counter, params);
     handleAsyncCommand(CMD_FOOT_PRESS_COUNTER, EVENT_APP_TYPE_FOOT_PRESS_RIGHT, &update_react_device_foot_press_counter, params);
-    timer_display = false;
+    context.timer_display = false;
     display_clear();
     if (enable == true)
     {
-        display_number(foot_press_counter);
+        display_number(context.foot_press_counter);
     }
     // Implement the functionality for FOOT_PRESS_COUNTER command here
 }
@@ -365,9 +354,8 @@ void handleFootPressCounterCommand(uint8_t *bytecode)
  */
 void handleFootPressCounterResetCommand(uint8_t *bytecode)
 {
-    Log.noticeln(F("react_engine: Command FOOT_PRESS_COUNTER_RESET - %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    foot_press_counter = 0;
+    Log.noticeln(F("react_engine: Command FOOT_PRESS_COUNTER_RESET"));
+    context.foot_press_counter = 0;
     display_number(0);
 }
 
@@ -378,41 +366,43 @@ void handleFootPressCounterResetCommand(uint8_t *bytecode)
  */
 void handleLedEffectCommand(uint8_t *bytecode)
 {
-    Log.noticeln(F("react_engine: Command LED_EFFECT - %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    uint8_t effect = bytecode[pc];
-    pc = pc + 1;
+    Log.noticeln(F("react_engine: Command LED_EFFECT"));
+    uint8_t effect = bytecode[context.pc];
+    context.pc = context.pc + 1;
     led_set_effect((LED_EFFECTS)effect);
 }
 
 void handleRepeatCountCommand(uint8_t *bytecode)
 {
-    Log.noticeln(F("react_engine: Command REPEAT_COUNT %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    repeat_count = (uint16_t)(bytecode[pc] << 8);
-    repeat_count |= bytecode[pc + 1];
-    repeat_count_display = (bytecode[pc + 2] == ARGS::TRUE) ? true : false;
+    Log.noticeln(F("react_engine: Command REPEAT_COUNT"));
+    repeat_context[repeat_index].count = (uint16_t)(bytecode[context.pc] << 8);
+    repeat_context[repeat_index].count |= bytecode[context.pc + 1];
+    repeat_context[repeat_index].display = (bytecode[context.pc + 2] == ARGS::TRUE) ? true : false;
     // TODO manage centrally all types of display
-    if (repeat_count_display == true)
+    if (repeat_context[repeat_index].display == true)
     {
-        display_number(repeat_count);
+        display_number(repeat_context[repeat_index].count);
     }
-    pc = pc + 3;
-    repeat_pc = pc;
+    context.pc = context.pc + 3;
+    repeat_context[repeat_index].pc = context.pc;
+    repeat_index++;
 }
 
 void handleRepeatEndCommand(uint8_t *bytecode)
 {
-    Log.noticeln(F("react_engine: Command REPEAT_END %l ms"), millis() - last_command_time);
-    last_command_time = millis();
-    repeat_count--;
-    if (repeat_count != 0)
+    Log.noticeln(F("react_engine: Command REPEAT_END"));
+    repeat_context[repeat_index-1].count--;
+    if (repeat_context[repeat_index-1].count != 0)
     {
-        pc = repeat_pc;
+        context.pc = repeat_context[repeat_index-1].pc;
     }
-    if (repeat_count_display == true)
+    else if (repeat_index > 1)
     {
-        display_number(repeat_count);
+        repeat_index--;
+    }
+    if (repeat_context[repeat_index-1].display == true)
+    {
+        display_number(repeat_context[repeat_index-1].count);
     }
 }
 
@@ -423,8 +413,8 @@ void handleRepeatEndCommand(uint8_t *bytecode)
  */
 void interpret_command(uint8_t *bytecode)
 {
-    uint8_t command = bytecode[pc];
-    pc = pc + 1;
+    uint8_t command = bytecode[context.pc];
+    context.pc = context.pc + 1;
     switch (command)
     {
     case CMD_START:
@@ -481,13 +471,26 @@ void interpret_command(uint8_t *bytecode)
     }
 }
 
+
+void react_engine_clear_context()
+{
+    context.pc = 0;
+    context.state = RE_IDLE;
+    context.foot_press_counter = 0;
+    context.timer = 0;
+    context.timer_display = false;
+    context.waited_app_event_time = 0;
+    context.waited_app_event.type = EVENT_TYPE_NONE;
+    asyncCommandsList.clear();
+}
 /**
  * @brief Initialize the react engine.
  */
 void react_engine_setup()
 {
-    Log.notice(F("react_engine: setup" CR));
-    re_state = RE_READY;
+    Log.noticeln(F("react_engine: setup"));
+    react_engine_clear_context();
+    context.state = RE_READY;
 }
 
 /**
@@ -495,9 +498,8 @@ void react_engine_setup()
  */
 void react_engine_stop()
 {
-    re_state = RE_READY;
-    pc = 0;
-    waited_app_event.type = EVENT_TYPE_NONE;
+    react_engine_clear_context();
+    context.state = RE_READY;
     event_registry_disable_app_event();
     led_set_color(COLOR_BLACK);
 }
@@ -507,31 +509,29 @@ void react_engine_stop()
  */
 void react_engine_pause()
 {
-    saved_context.pc = pc;
-    saved_context.state = re_state;
-    saved_context.timer = timer;
+    saved_context = context;
     event_registry_disable_app_event();
-    re_state = RE_PAUSE;
+    context.state = RE_PAUSE;
 }
 
-void task_timer()
+void react_engine_process_timer()
 {
     static EVENT e;
     static uint16_t tick = 0;
-    if (timer > 0)
+    if (context.timer > 0)
     {
         if ((tick * REACT_ENGINE_CYCLE_TIME) == 1000) // 1s
         {
-            timer = timer - 1;
+            context.timer = context.timer - 1;
             // raise event every s when timer is updated
             e.timestamp = millis();
             e.type = EVENT_APP_TIMER;
-            e.value = timer;
+            e.value = context.timer;
             event_registry_push_app_event(e);
             tick = 0;
-            if (timer_display)
+            if (context.timer_display)
             {
-                display_number(timer);
+                display_number(context.timer);
             }
         }
         tick++;
@@ -543,11 +543,11 @@ void task_timer()
  */
 void react_engine_task()
 {
-    task_timer();
-    switch (re_state)
+    react_engine_process_timer();
+    switch (context.state)
     {
     case RE_READY:
-        re_state = RE_RUN;
+        context.state = RE_RUN;
         event_registry_enable_app_event();
         break;
     case RE_RUN:
@@ -556,37 +556,36 @@ void react_engine_task()
         break;
     case RE_HOLD_TIMER_ENABLE:
         handle_application_events();
-        if (timer == 0)
+        if (context.timer == 0)
         {
-            re_state = RE_RUN;
+            context.state = RE_RUN;
         }
         break;
     case RE_HOLD_WAIT_APP_EVENT:
         EVENT app_event;
-        if (waited_app_event.type == EVENT_APP_TYPE_FOOT_PRESS)
+        if (context.waited_app_event.type == EVENT_APP_TYPE_FOOT_PRESS)
         {
-            if (event_registry_get_app_event(EVENT_APP_TYPE_FOOT_PRESS_LEFT, waited_app_event.timestamp, app_event) || event_registry_get_app_event(EVENT_APP_TYPE_FOOT_PRESS_RIGHT, waited_app_event.timestamp, app_event))
+            if (event_registry_get_app_event(EVENT_APP_TYPE_FOOT_PRESS_LEFT, context.waited_app_event.timestamp, app_event) || event_registry_get_app_event(EVENT_APP_TYPE_FOOT_PRESS_RIGHT, context.waited_app_event.timestamp, app_event))
             {
-                re_state = RE_RUN;
+                context.state = RE_RUN;
             }
         }
-        else if (event_registry_get_app_event(waited_app_event.type, waited_app_event_time, app_event))
+        else if (event_registry_get_app_event(context.waited_app_event.type, context.waited_app_event_time, app_event))
         {
-            if ((waited_app_event.type != EVENT_TYPE::EVENT_APP_TIMER) || ((waited_app_event.type == EVENT_TYPE::EVENT_APP_TIMER) && (waited_app_event.value == app_event.value)))
+            if ((context.waited_app_event.type != EVENT_TYPE::EVENT_APP_TIMER) || ((context.waited_app_event.type == EVENT_TYPE::EVENT_APP_TIMER) && (context.waited_app_event.value == app_event.value)))
             {
-                Log.noticeln(F("react_engine_task: switching to RUN after event: %i"), waited_app_event.type);
-                re_state = RE_RUN;
+                Log.noticeln(F("react_engine_task: switching to RUN after event: %i"), context.waited_app_event.type);
+                context.state = RE_RUN;
             }
         }
         break;
     case RE_PAUSE:
         // restoring context
         display_clear();
-        pc = saved_context.pc;
-        re_state = saved_context.state;
-        timer = saved_context.timer;
+        context.pc = saved_context.pc;
+        context.state = saved_context.state;
+        context.timer = saved_context.timer;
         event_registry_enable_app_event();
-
         break;
     default:
         break;

@@ -109,8 +109,10 @@ void handle_ready_state(EVENT event)
     state_machine_switch_state(RUN);
     Log.noticeln(F("state_machine_task: switching to RUN state" CR));
     led_set_color(COLOR_BLACK);
+    display_message(MSG_GO, 1);
+    delay(1000);
+    display_clear();
     task_react_engine.enable();
-    display_message(MSG_GO, 2);
     break;
   case EVENT_SYS_TYPE_SET_LP:
     state_machine_switch_state(SET);
@@ -166,7 +168,14 @@ void handle_run_state(EVENT event)
     // led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
     break;
 
-  case EVENT_SYS_TYPE_PAUSE:
+  case EVENT_SYS_TYPE_DONE:
+    state_machine_switch_state(READY);
+    Log.noticeln(F("state_machine_task: DONE event, react code execution completed" CR));
+    react_engine_stop();
+    task_react_engine.disable();
+    display_message(MSG_DONE, 2);
+    display_push_message_to_queue(MSG_IDLE, 0);
+    led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
     break;
 
   default:

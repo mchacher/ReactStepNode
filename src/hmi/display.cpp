@@ -71,7 +71,6 @@ void display_message(const char *message, uint8_t duration)
     {
         expiration_time = millis() + duration * 1000;
     }
-
     task_active = true;
 }
 

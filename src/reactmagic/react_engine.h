@@ -4,6 +4,7 @@
 
 #define REACT_ENGINE_CYCLE_TIME 10 // 10ms
 
+#include "event_type.h"
 typedef enum  
 {
     RE_IDLE,                // No program to run
@@ -20,7 +21,17 @@ typedef struct {
     int pc;
     uint16_t timer;
     RE_STATE state;
-} CONTEXT;
+    uint16_t foot_press_counter;
+    unsigned long waited_app_event_time;
+    EVENT waited_app_event;
+    bool timer_display = false;
+} Context;
+
+typedef struct  {
+    int pc;
+    uint16_t count;
+    bool display;
+} RepeatContext;
 
 
 
