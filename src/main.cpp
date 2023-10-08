@@ -201,7 +201,7 @@ void handle_set_state(EVENT event)
   case EVENT_SYS_TYPE_SET_SP:
     Log.verboseln(F("state_machine_task: SET_SP event" CR));
 #if REACT_MESH == 1
-    comm.incrementNode_id();
+    comm.incrementNodeId();
     display_number(comm.getNodeId());
 #endif
   default:
@@ -259,7 +259,7 @@ void setup()
   uint8_t rand(random(256));
   for (int i = 0; i <= rand; i++)
   {
-    comm.incrementNode_id();
+    comm.incrementNodeId();
   }
 
   Log.noticeln(F("[%s] Starting React Step Node with ID: [%d]"), __func__, comm.getNodeId());
