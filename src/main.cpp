@@ -6,57 +6,65 @@
 #include <ArduinoLog.h>
 #include "hardware_config.h"
 #include <printf.h>
-#include "state_machine.h"
-#include "hmi/led.h"
-#include "reactmagic/react_engine.h"
-#include "reactmagic/event_registry.h"
-#include "hmi/foot_sensor.h"
+#ifdef false
+#include "drivers/mic.h"
 #include "hmi/display.h"
+#include "hmi/foot_sensor.h"
+#include "hmi/led.h"
+#include "reactmagic/event_registry.h"
+#include "reactmagic/react_engine.h"
+#include "state_machine.h"
+#endif
 #if DIGITAL_FOOT_SENSOR == 1
 #include "hmi/button.h"
 #endif
-#include "react_scheduler.h"
-#include "drivers/mic.h"
 #if REACT_MESH == 1
 #include "com/rf.h"
 #endif
+#include "react_scheduler.h"
 
 #define TASK_CYCLE_FAST 20
 #define TASK_CYCLE_MEDIUM 100
 #define TASK_CYCLE_SLOW 250
+#define TASK_CYCLE_HEARTBEAT 5000
 
 ReactScheduler runner;
+PACKET_HEADER heartBeat;
 
 #if REACT_MESH == 1
-// communication::rf comm;
-// uint32_t counter(0);
 
 void taskCommReceiveFunction() {
   comm.receive();
 }
-// void taskCommSendFunction() {
-//   comm.send(0, counter);
-//   counter += 1;
-// }
+void taskCommSendFunction() {
+  comm.masterSend(&heartBeat, static_cast<SERIAL_MSG_TYPE>(heartBeat.type));
+}
 #endif
 
+#ifdef false
 // Tasks
 Task task_led(TASK_CYCLE_FAST, &led_task);
 Task task_react_engine(REACT_ENGINE_CYCLE_TIME, &react_engine_task);
 Task task_event_registry(TASK_CYCLE_SLOW, &event_registry_task);
+#endif
 #if DIGITAL_FOOT_SENSOR == 1
 Task task_foot_sensor(TASK_CYCLE_FAST, &foot_sensor_task);
 #endif
+#ifdef false
 Task task_display(TASK_CYCLE_MEDIUM, &display_task);
+#endif
 #if LOCAL_COMMAND_BUTTONS == 1
 Task task_button(TASK_CYCLE_FAST, &button_task);
 #endif
+#ifdef false
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
+#endif
 #if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
-// Task taskCommSend(2000, &taskCommSendFunction);
+Task taskCommSend(TASK_CYCLE_HEARTBEAT, &taskCommSendFunction);
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
 #endif
+#ifdef false
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
 
@@ -248,7 +256,7 @@ void state_machine_task()
     }
   }
 }
-
+#endif
 void setup()
 {
   Serial.begin(115200);
@@ -280,6 +288,9 @@ void setup()
 
   // Init communication module
   comm.setup();
+  // build the heart beat message
+  comm.buildHeader(heartBeat, SERIAL_MSG_TYPE_HEARTBEAT, sizeof(heartBeat));
+
 #else
   Log.noticeln(F("Starting React Step Node - REACT MESH is not activated!"));
 #endif
@@ -291,7 +302,7 @@ void setup()
 #elif defined(MICRO_STEP_MOCK_UP)
   Log.noticeln(F("Main: Starting Micro Step Mockup"));
 #endif
-
+#ifdef false
   // initialize scheduler
   Log.noticeln(F("Main: initializing scheduler"));
   runner.init();
@@ -311,7 +322,7 @@ void setup()
   event_registry_setup();
   runner.addTask(task_event_registry);
   task_event_registry.enable();
-
+#endif
 #if DIGITAL_FOOT_SENSOR == 1
   // Create and Launch Foot Sensor task
   foot_sensor_setup();
@@ -325,7 +336,7 @@ void setup()
   runner.addTask(task_button);
   task_button.enable();
 #endif
-
+#ifdef false
   // Create and Launch React Engine task
   react_engine_setup();
   runner.addTask(task_react_engine);
@@ -334,7 +345,7 @@ void setup()
   display_setup();
   runner.addTask(task_display);
   task_display.enable();
-
+#endif
 #if REACT_MESH == 1
   runner.addTask(taskCommReceive);
   taskCommReceive.enable();
@@ -344,8 +355,10 @@ void setup()
   // Log.noticeln(F("--- taskCommSend: added and enabled"));
 #endif
 
+#ifdef false
   setup_mic();
   event_registry_push(EVENT_SYS_TYPE_READY);
+#endif
 }
 
 void loop()
