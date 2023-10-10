@@ -21,7 +21,6 @@ void foot_sensor_setup()
     foot_sensor_right.begin();
 }
 
-#endif
 
 enum FootSensorState {
     FOOT_SENSOR_NONE,
@@ -40,19 +39,19 @@ enum FootSensorState {
 FootSensorState checkFootSensorState(Button& sensor)
 {
     sensor.read();
-    
+
     if (sensor.wasPressed())
     {
         Log.verboseln(F("foot_sensor_task: FOOT_SENSOR_PRESSED"));
         return FOOT_SENSOR_PRESSED;
     }
-    
+
     if (sensor.wasReleased())
     {
         Log.verboseln(F("foot_sensor_task: FOOT_SENSOR_RELEASED"));
         return FOOT_SENSOR_RELEASED;
     }
-    
+
     return FOOT_SENSOR_NONE;
 }
 
@@ -69,7 +68,7 @@ void foot_sensor_task()
 
     // Check the left foot sensor state
     FootSensorState leftState = checkFootSensorState(foot_sensor_left);
-    
+
     if (leftState == FOOT_SENSOR_PRESSED)
     {
         // Increment the counter for pending left foot press events.
@@ -83,7 +82,7 @@ void foot_sensor_task()
 
     // Check the right foot sensor state
     FootSensorState rightState = checkFootSensorState(foot_sensor_right);
-    
+
     if (rightState == FOOT_SENSOR_PRESSED)
     {
         // Increment the counter for pending right foot press events.
@@ -151,3 +150,5 @@ void foot_sensor_task()
         }
     }
 }
+
+#endif

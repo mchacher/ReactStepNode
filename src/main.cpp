@@ -12,7 +12,9 @@
 #include "reactmagic/event_registry.h"
 #include "hmi/foot_sensor.h"
 #include "hmi/display.h"
+#if DIGITAL_FOOT_SENSOR == 1
 #include "hmi/button.h"
+#endif
 #include "react_scheduler.h"
 #include "drivers/mic.h"
 #if REACT_MESH == 1
@@ -42,9 +44,13 @@ void taskCommReceiveFunction() {
 Task task_led(TASK_CYCLE_FAST, &led_task);
 Task task_react_engine(REACT_ENGINE_CYCLE_TIME, &react_engine_task);
 Task task_event_registry(TASK_CYCLE_SLOW, &event_registry_task);
+#if DIGITAL_FOOT_SENSOR == 1
 Task task_foot_sensor(TASK_CYCLE_FAST, &foot_sensor_task);
+#endif
 Task task_display(TASK_CYCLE_MEDIUM, &display_task);
+#if LOCAL_COMMAND_BUTTONS == 1
 Task task_button(TASK_CYCLE_FAST, &button_task);
+#endif
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
 #if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
@@ -306,14 +312,19 @@ void setup()
   runner.addTask(task_event_registry);
   task_event_registry.enable();
 
+#if DIGITAL_FOOT_SENSOR == 1
   // Create and Launch Foot Sensor task
   foot_sensor_setup();
   runner.addTask(task_foot_sensor);
   task_foot_sensor.enable();
+#endif
+
+#if LOCAL_COMMAND_BUTTONS == 1
   // Create and Launch Button task
   button_setup();
   runner.addTask(task_button);
   task_button.enable();
+#endif
 
   // Create and Launch React Engine task
   react_engine_setup();

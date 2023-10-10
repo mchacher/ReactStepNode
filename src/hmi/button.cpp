@@ -1,10 +1,11 @@
-#include "Arduino.h"
 #include "button.h"
-#include "ArduinoLog.h"
-#include <JC_Button.h>
-#include "hardware_config.h"
+#if LOCAL_COMMAND_BUTTONS == 1
 #include "../reactmagic/event_queue.h"
 #include "../reactmagic/event_registry.h"
+#include "Arduino.h"
+#include "ArduinoLog.h"
+#include "hardware_config.h"
+#include <JC_Button.h>
 
 #if REACT_MESH == 1
 #include "com/rf.h"
@@ -79,10 +80,13 @@ void button_task()
     {
         event_registry_push(EVENT_SYS_TYPE_START);
         Log.noticeln(F("button task: PLAY PAUSE button pressed"));
+#if REACT_MESH == 1
+        // Todo: need to manage correctly the comm header
         PACKET_EVENT eventPacket;
         eventPacket.event = EVENT_SYS_TYPE_START;
 
         comm.masterSend(&eventPacket, SERIAL_MSG_TYPE_EVENT);
+#endif
     }
 
     if (button_read(pb_stop) != BUTTON_NO_EVENT)
@@ -107,3 +111,4 @@ void button_task()
         Log.noticeln(F("button task: SET_SP button short pressed"));
     }
 }
+#endif
