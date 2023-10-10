@@ -4,9 +4,10 @@
 #ifndef RF_H
 #define RF_H
 
+#include "com/message_format.h"
 #include <RF24.h>
-#include <RF24Network.h>
 #include <RF24Mesh.h>
+#include <RF24Network.h>
 
 #define MAX_NODE_ID 99
 #define MESH_NOMASTER
@@ -16,15 +17,6 @@ struct payload_t
   unsigned long ms;
   unsigned long counter;
 };
-
-typedef enum
-{
-  SERIAL_MSG_TYPE_NULL = 0,
-  SERIAL_MSG_TYPE_LOG = 1,
-  SERIAL_MSG_TYPE_SYS = 2,
-  SERIAL_MSG_TYPE_FILE = 3, // for file transfer from a computer
-  SERIAL_MSG_TYPE_EVENT = 4
-} MSG_TYPE;
 
 
 class rf {
@@ -48,7 +40,15 @@ public:
    * @param data payload to be send
    * @return bool in success even false
    **********************************************************************/
-  bool send(uint16_t destNode, uint32_t data);
+  bool send(uint16_t destNode, const void* data, SERIAL_MSG_TYPE type);
+
+  /*!********************************************************************
+   * @brief Send data over RF24 to master
+   * @param data payload to be send
+   * @param type data type
+   * @return bool in success even false
+   **********************************************************************/
+  bool masterSend(const void* data, SERIAL_MSG_TYPE type);
 
   /*!********************************************************************
    * @brief Return the current Node Id
@@ -61,20 +61,29 @@ public:
    **********************************************************************/
   void incrementNodeId();
 
+protected:
+
+  void eventMgt(const PACKET_EVENT& data);
+
 private:
   RF24 mRadio;
   RF24Network mNetwork;
   RF24Mesh mMesh;
 
-#if RP2040 1
+#if RP2040 == 1
   arduino::MbedSPI SpiRP2040(PIN_MISO, PIN_MOSI, PIN_SCK);
 #endif
 
   uint8_t mNodeId;
 
   static const uint8_t DEFAULT_NODE_ID;
+
+  static bool mIsReady;
 };
+
+
 }
 
 #endif
 #endif
+static communication::rf comm;

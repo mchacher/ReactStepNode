@@ -6,6 +6,10 @@
 #include "../reactmagic/event_queue.h"
 #include "../reactmagic/event_registry.h"
 
+#if REACT_MESH == 1
+#include "com/rf.h"
+#endif
+
 #define LONG_PRESS_TIME 1000 // Long press time threshold in milliseconds (1s)
 
 #if (LOCAL_COMMAND_BUTTONS == 1)
@@ -36,7 +40,7 @@ void button_setup()
  * @param button The button to read.
  * @return The type of button event (short press, long press, or no event).
  */
-ButtonEvent button_read(Button &button)
+ButtonEvent button_read(Button& button)
 {
     static bool long_press = false;
     button.read();
@@ -75,6 +79,10 @@ void button_task()
     {
         event_registry_push(EVENT_SYS_TYPE_START);
         Log.noticeln(F("button task: PLAY PAUSE button pressed"));
+        PACKET_EVENT eventPacket;
+        eventPacket.event = EVENT_SYS_TYPE_START;
+
+        comm.masterSend(&eventPacket, SERIAL_MSG_TYPE_EVENT);
     }
 
     if (button_read(pb_stop) != BUTTON_NO_EVENT)

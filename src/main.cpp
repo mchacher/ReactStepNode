@@ -26,16 +26,16 @@
 ReactScheduler runner;
 
 #if REACT_MESH == 1
-communication::rf comm;
-uint32_t counter(0);
+// communication::rf comm;
+// uint32_t counter(0);
 
 void taskCommReceiveFunction() {
   comm.receive();
 }
-void taskCommSendFunction() {
-  comm.send(0, counter);
-  counter += 1;
-}
+// void taskCommSendFunction() {
+//   comm.send(0, counter);
+//   counter += 1;
+// }
 #endif
 
 // Tasks
@@ -48,7 +48,7 @@ Task task_button(TASK_CYCLE_FAST, &button_task);
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
 #if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
-Task taskCommSend(2000, &taskCommSendFunction);
+// Task taskCommSend(2000, &taskCommSendFunction);
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
 #endif
 static STATE_PRODUCT state;
@@ -328,9 +328,9 @@ void setup()
   runner.addTask(taskCommReceive);
   taskCommReceive.enable();
   Log.noticeln(F("--- taskCommReceive: added and enabled"));
-  runner.addTask(taskCommSend);
-  taskCommSend.enable();
-  Log.noticeln(F("--- taskCommSend: added and enabled"));
+  // runner.addTask(taskCommSend);
+  // taskCommSend.enable();
+  // Log.noticeln(F("--- taskCommSend: added and enabled"));
 #endif
 
   setup_mic();
