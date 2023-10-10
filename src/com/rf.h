@@ -61,9 +61,17 @@ public:
    **********************************************************************/
   void incrementNodeId();
 
+  /*!********************************************************************
+   * @brief Useful to build communication header
+   * @param header
+   **********************************************************************/
+  void buildHeader(PACKET_HEADER& header, SERIAL_MSG_TYPE type, uint8_t data_length);
+
 protected:
 
   void eventMgt(const PACKET_EVENT& data);
+
+  uint16_t generatePacketId();
 
 private:
   RF24 mRadio;
@@ -79,6 +87,8 @@ private:
   static const uint8_t DEFAULT_NODE_ID;
 
   static bool mIsReady;
+
+  uint16_t mCurrentPacketId;
 };
 
 

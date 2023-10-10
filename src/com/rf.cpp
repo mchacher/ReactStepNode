@@ -1,10 +1,10 @@
 #include "hardware_config.h"
+#include <Arduino.h>
 #if REACT_MESH == 1
 #include "ArduinoLog.h"
 #include "reactmagic\event_registry.h"
 #include "reactmagic\event_type.h"
 #include "rf.h"
-#include <Arduino.h>
 
 namespace communication
 {
@@ -15,7 +15,8 @@ rf::rf() :
   mRadio(PIN_CE, PIN_CSN),
   mNetwork(mRadio),
   mMesh(mRadio, mNetwork),
-  mNodeId(DEFAULT_NODE_ID)
+  mNodeId(DEFAULT_NODE_ID),
+  mCurrentPacketId(0)
 {
   // Constructor for RF class when REACT_MESH is defined
 }
@@ -146,7 +147,8 @@ bool rf::send(uint16_t destNode, const void* data, SERIAL_MSG_TYPE type)
   return isSuccess;
 }
 
-bool rf::masterSend(const void* data, SERIAL_MSG_TYPE type) {
+bool rf::masterSend(const void* data, SERIAL_MSG_TYPE type)
+{
   return send(0, data, type);
 }
 
@@ -173,7 +175,25 @@ void rf::incrementNodeId()
   mMesh.setNodeID(mNodeId);
 }
 
-void rf::eventMgt(const PACKET_EVENT& data) {
+void rf::buildHeader(PACKET_HEADER& header, SERIAL_MSG_TYPE type, uint8_t data_length)
+{
+  header.packet_id = generatePacketId();
+  header.type = type;
+  header.data_length = data_length;
+}
+
+uint16_t rf::generatePacketId()
+{
+  if (0xFFFF <= mCurrentPacketId + 1)
+  {
+    mCurrentPacketId = 0;
+  }
+  return mCurrentPacketId++;
+}
+
+
+void rf::eventMgt(const PACKET_EVENT& data)
+{
   Log.noticeln(F("[%s] Receive event [%d]"), __func__, data.event);
   switch (static_cast<EVENT_TYPE>(data.event))
   {
