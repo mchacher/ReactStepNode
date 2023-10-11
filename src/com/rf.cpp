@@ -2,6 +2,7 @@
 #include "rf.h"
 #if REACT_MESH == 1
 #include "ArduinoLog.h"
+#include "com\decoder\eventHandler.h "
 #include "reactmagic\event_registry.h"
 #include "reactmagic\event_type.h"
 
@@ -20,7 +21,7 @@ rf::rf() :
   mNodeId(DEFAULT_NODE_ID),
   mCurrentPacketId(0)
 {
-  // Constructor for RF class when REACT_MESH is defined
+  mDecoderList.push_back(std::make_shared<eventHandler>(mNetwork));
 }
 
 void rf::setup()
@@ -72,43 +73,23 @@ void rf::receive()
     mNetwork.peek(header);
     Log.noticeln(F("[%s] Node ID [%d]"), __func__, header.from_node);
 
-    switch (static_cast<SERIAL_MSG_TYPE>(header.type)) {
-    case SERIAL_MSG_TYPE_HEARTBEAT: {
-      PACKET_HEADER data;
-      mNetwork.read(header, &data);
-#ifdef DEBUG
-      log_info(F("[%s] Heart beat message"), __func__);
-#endif
-      break;
+    bool isManaged(false);
+    for (const auto& decoder : mDecoderList)
+    {
+      isManaged = decoder->run(static_cast<SERIAL_MSG_TYPE>(header.type));
+      if (isManaged)
+      {
+        // The first object which can handle this message will finish this transaction
+        // because in run method we clear receive buffer
+        break;
+      }
     }
-    case SERIAL_MSG_TYPE_LOG:
-      // #ifdef DEBUG
-      //       log_info(F("[%s] Log message"), __func__);
-      // #endif
-      break;
-    case SERIAL_MSG_TYPE_SYS:
-      // #ifdef DEBUG
-      //       log_info(F("[%s] System message"), __func__);
-      // #endif
-      break;
-    case SERIAL_MSG_TYPE_FILE:
-      // #ifdef DEBUG
-      //       log_info(F("[%s] File message"), __func__);
-      // #endif
-      break;
-    case SERIAL_MSG_TYPE_EVENT: {
-      PACKET_EVENT data;
-      mNetwork.read(header, &data);
-      eventMgt(data);
-#ifdef DEBUG
-      log_info(F("[%s] Event message"), __func__);
-#endif
-      break;
-    }
-    default:
+
+    // In case of unmanageable data, just clear the receive buffer
+    if (!isManaged)
+    {
       mNetwork.read(header, 0, 0);
       Log.noticeln(F("[%s] Received unmanaged data type [%d]"), __func__, header.type);
-      break;
     }
   }
 }
@@ -191,23 +172,6 @@ uint16_t rf::generatePacketId()
     mCurrentPacketId = 0;
   }
   return mCurrentPacketId++;
-}
-
-
-void rf::eventMgt(const PACKET_EVENT& data)
-{
-  Log.noticeln(F("[%s] Receive event [%d]"), __func__, data.event);
-  switch (static_cast<EVENT_TYPE>(data.event))
-  {
-  case EVENT_SYS_TYPE_START:
-    event_registry_push(EVENT_SYS_TYPE_START);
-    Log.noticeln(F("[%s] Send internal Start event"), __func__, data.event);
-    break;
-
-  default:
-    Log.noticeln(F("[%s] Not managed event"), __func__, data.event);
-    break;
-  }
 }
 
 }

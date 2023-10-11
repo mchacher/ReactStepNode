@@ -4,10 +4,12 @@
 #ifndef RF_H
 #define RF_H
 
-#include "com/message_format.h"
+#include "com\decoder\iHandler.h"
+#include "com\message_format.h"
 #include <RF24.h>
 #include <RF24Mesh.h>
 #include <RF24Network.h>
+#include <vector>
 
 #define MAX_NODE_ID 99
 #define MESH_NOMASTER
@@ -69,8 +71,6 @@ public:
 
 protected:
 
-  void eventMgt(const PACKET_EVENT& data);
-
   uint16_t generatePacketId();
 
 private:
@@ -89,6 +89,8 @@ private:
   static bool mIsReady;
 
   uint16_t mCurrentPacketId;
+
+  std::vector<std::shared_ptr<iHandler>> mDecoderList;
 };
 
 
