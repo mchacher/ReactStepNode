@@ -79,7 +79,7 @@ private:
   RF24Mesh mMesh;
 
 #if RP2040 == 1
-  arduino::MbedSPI SpiRP2040(PIN_MISO, PIN_MOSI, PIN_SCK);
+  arduino::MbedSPI mSpiRP2040;
 #endif
 
   uint8_t mNodeId;

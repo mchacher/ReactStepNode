@@ -1,10 +1,9 @@
-#include "hardware_config.h"
 #include <Arduino.h>
+#include "rf.h"
 #if REACT_MESH == 1
 #include "ArduinoLog.h"
 #include "reactmagic\event_registry.h"
 #include "reactmagic\event_type.h"
-#include "rf.h"
 
 namespace communication
 {
@@ -15,6 +14,9 @@ rf::rf() :
   mRadio(PIN_CE, PIN_CSN),
   mNetwork(mRadio),
   mMesh(mRadio, mNetwork),
+#if RP2040 == 1
+  mSpiRP2040(PIN_MISO, PIN_MOSI, PIN_SCK),
+#endif
   mNodeId(DEFAULT_NODE_ID),
   mCurrentPacketId(0)
 {
@@ -25,8 +27,8 @@ void rf::setup()
 {
   Log.noticeln(F("[%s] Node ID [%d]"), __func__, mNodeId);
 #if RP2040 == 1
-  SpiRP2040.begin();
-  if (!mRadio.begin(&SpiRP2040))
+  mSpiRP2040.begin();
+  if (!mRadio.begin(&mSpiRP2040))
   {
     Log.noticeln(F("[%s] radio hardware is not responding!!"), __func__);
     while (1)

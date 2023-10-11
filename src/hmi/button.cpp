@@ -1,8 +1,6 @@
 #include "button.h"
-#if LOCAL_COMMAND_BUTTONS == 1
 #include "../reactmagic/event_queue.h"
 #include "../reactmagic/event_registry.h"
-#include "Arduino.h"
 #include "ArduinoLog.h"
 #include "hardware_config.h"
 #include <JC_Button.h>
@@ -83,7 +81,7 @@ void button_task()
 #if REACT_MESH == 1
         // Todo: need to manage correctly the comm header
         PACKET_EVENT eventPacket;
-        comm.buildHeader(eventPacket.header, EVENT_SYS_TYPE_START, sizeof(eventPacket));
+        comm.buildHeader(eventPacket.header, SERIAL_MSG_TYPE_EVENT, sizeof(eventPacket));
         eventPacket.event = EVENT_SYS_TYPE_START;
 
         comm.masterSend(&eventPacket, SERIAL_MSG_TYPE_EVENT);
@@ -112,4 +110,3 @@ void button_task()
         Log.noticeln(F("button task: SET_SP button short pressed"));
     }
 }
-#endif

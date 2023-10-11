@@ -5,8 +5,6 @@
 #define LOCAL_COMMAND_BUTTONS   1 // set to 1 to activate PLAY/PAUSE, STOP and CUSTOM Buttons
 #define DIGITAL_FOOT_SENSOR     1 // set to 1 for digital foot sensor (typically on mock up)
 
-#define ATMEGA328P
-
 // Raspberry RP 2040 configuration
 #ifdef RP2040
 
