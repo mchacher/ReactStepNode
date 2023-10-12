@@ -16,7 +16,9 @@
 #if DIGITAL_FOOT_SENSOR == 1
 #include "hmi/button.h"
 #endif
+
 #if REACT_MESH == 1
+
 #include "com/rf.h"
 #endif
 #include "react_scheduler.h"
@@ -27,14 +29,17 @@
 #define TASK_CYCLE_HEARTBEAT 5000
 
 ReactScheduler runner;
-PACKET_HEADER heartBeat;
 
 #if REACT_MESH == 1
 
-void taskCommReceiveFunction() {
+PACKET_HEADER heartBeat;
+
+void taskCommReceiveFunction()
+{
   comm.receive();
 }
-void taskCommSendFunction() {
+void taskCommSendFunction()
+{
   comm.masterSend(&heartBeat, static_cast<SERIAL_MSG_TYPE>(heartBeat.type));
 }
 #endif
@@ -51,11 +56,13 @@ Task task_display(TASK_CYCLE_MEDIUM, &display_task);
 Task task_button(TASK_CYCLE_FAST, &button_task);
 #endif
 Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
+
 #if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
 Task taskCommSend(TASK_CYCLE_HEARTBEAT, &taskCommSendFunction);
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
 #endif
+
 static STATE_PRODUCT state;
 unsigned long timestamp_last_state_transition = 0;
 
@@ -250,8 +257,7 @@ void state_machine_task()
 void setup()
 {
   Serial.begin(115200);
-  while (!Serial)
-    delay(10);
+  delay(1000);
 
   Log.begin(LOG_LEVEL_NOTICE, &Serial);
 
@@ -335,7 +341,7 @@ void setup()
   runner.addTask(taskCommReceive);
   taskCommReceive.enable();
   Log.noticeln(F("--- taskCommReceive: added and enabled"));
-  // runner.addTask(taskCommSend);
+  runner.addTask(taskCommSend);
   // taskCommSend.enable();
   // Log.noticeln(F("--- taskCommSend: added and enabled"));
 #endif

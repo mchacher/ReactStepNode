@@ -78,14 +78,14 @@ void button_task()
     {
         event_registry_push(EVENT_SYS_TYPE_START);
         Log.noticeln(F("button task: PLAY PAUSE button pressed"));
-#if REACT_MESH == 1
-        // Todo: need to manage correctly the comm header
-        PACKET_EVENT eventPacket;
-        comm.buildHeader(eventPacket.header, SERIAL_MSG_TYPE_EVENT, sizeof(eventPacket));
-        eventPacket.event = EVENT_SYS_TYPE_START;
+// #if REACT_MESH == 1
+//         // Todo: need to manage correctly the comm header
+//         PACKET_EVENT eventPacket;
+//         comm.buildHeader(eventPacket.header, SERIAL_MSG_TYPE_EVENT, sizeof(eventPacket));
+//         eventPacket.event = EVENT_SYS_TYPE_START;
 
-        comm.masterSend(&eventPacket, SERIAL_MSG_TYPE_EVENT);
-#endif
+//         comm.masterSend(&eventPacket, SERIAL_MSG_TYPE_EVENT);
+// #endif
     }
 
     if (button_read(pb_stop) != BUTTON_NO_EVENT)

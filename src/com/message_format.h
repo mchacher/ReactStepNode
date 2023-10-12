@@ -9,6 +9,7 @@
 #define MESSAGE_FORMAT_H
 
 #include "Arduino.h"
+#include "reactmagic/event_type.h"
 
 #define DATA_BUFFER_SIZE 252   // UART_BUFFER_SIZE - HEADER_SIZE
 #define LOG_MESSAGE_SIZE 128
@@ -58,7 +59,7 @@ typedef struct __attribute__((__packed__))
 typedef struct __attribute__((__packed__))
 {
   PACKET_HEADER header;
-  uint8_t event;
+  EVENT event;
 } PACKET_EVENT;
 
 /**

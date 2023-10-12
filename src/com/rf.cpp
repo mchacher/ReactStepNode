@@ -2,9 +2,9 @@
 #include "rf.h"
 #if REACT_MESH == 1
 #include "ArduinoLog.h"
-#include "com\decoder\eventHandler.h "
-#include "reactmagic\event_registry.h"
-#include "reactmagic\event_type.h"
+#include "decoder/eventHandler.h"
+#include "../reactmagic/event_registry.h"
+#include "../reactmagic/event_type.h"
 
 namespace communication
 {
@@ -16,7 +16,7 @@ rf::rf() :
   mNetwork(mRadio),
   mMesh(mRadio, mNetwork),
 #if RP2040 == 1
-  mSpiRP2040(PIN_MISO, PIN_MOSI, PIN_SCK),
+  SPI0(PIN_MISO, PIN_MOSI, PIN_SCK),
 #endif
   mNodeId(DEFAULT_NODE_ID),
   mCurrentPacketId(0)
@@ -28,31 +28,51 @@ void rf::setup()
 {
   Log.noticeln(F("[%s] Node ID [%d]"), __func__, mNodeId);
 #if RP2040 == 1
-  mSpiRP2040.begin();
-  if (!mRadio.begin(&mSpiRP2040))
+  SPI0.begin();
+  if (!mRadio.begin(&SPI0))
   {
     Log.noticeln(F("[%s] radio hardware is not responding!!"), __func__);
     while (1)
       ;
   }
 #endif
-  // Connect to the mesh
+  mRadio.setPALevel(RF24_PA_MIN, 0);
+
+  // if (!mMesh.begin())
+  // {
+  //   if (0 != mNodeId && mRadio.isChipConnected())
+  //   {
+  //     do
+  //     {
+  //       // mesh.renewAddress() will return MESH_DEFAULT_ADDRESS on failure to connect
+  //       Log.noticeln(F("[%s] Could not connect to network. Connecting to the mesh..."), __func__);
+  //     } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
+  //   }
+  //   else
+  //   {
+  //     Log.noticeln(F("[%s] Radio hardware not responding."), __func__);
+  //     while (1)
+  //     {
+  //       // Hold in an infinite loop or manage this case using screen to show a user message.
+  //     }
+  //   }
+  // }
   if (!mMesh.begin())
   {
-    if (0 != mNodeId && mRadio.isChipConnected())
+    if (mRadio.isChipConnected())
     {
       do
       {
         // mesh.renewAddress() will return MESH_DEFAULT_ADDRESS on failure to connect
-        Log.noticeln(F("[%s] Could not connect to network. Connecting to the mesh..."), __func__);
+        Serial.println(F("Could not connect to network.\nConnecting to the mesh..."));
       } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
     }
     else
     {
-      Log.noticeln(F("[%s] Radio hardware not responding."), __func__);
+      Serial.println(F("Radio hardware not responding."));
       while (1)
       {
-        // Hold in an infinite loop or manage this case using screen to show a user message.
+        // hold in an infinite loop
       }
     }
   }
@@ -65,18 +85,26 @@ void rf::receive()
   // Call mesh.update to keep the network updated
   // todo: move it in dedicated method to be call each about 2 seconds
   mMesh.update();
+  
+
 
   // Check for incoming data from the sensors
   if (mNetwork.available())
   {
     RF24NetworkHeader header;
-    mNetwork.peek(header);
-    Log.noticeln(F("[%s] Node ID [%d]"), __func__, header.from_node);
+    uint8_t packet[256];
+    uint8_t size = mNetwork.read(header, &packet);
+    for (int i = 0; i < size; i++)
+    {
+      Log.noticeln("%i", packet[i]);
+    }
+    Log.noticeln(F("[%s]: message from Node ID [%d]"), __func__, header.from_node);
 
     bool isManaged(false);
+
     for (const auto& decoder : mDecoderList)
     {
-      isManaged = decoder->run(static_cast<SERIAL_MSG_TYPE>(header.type));
+      isManaged = decoder->run(static_cast<SERIAL_MSG_TYPE>(header.type), packet, size);
       if (isManaged)
       {
         // The first object which can handle this message will finish this transaction
@@ -84,7 +112,6 @@ void rf::receive()
         break;
       }
     }
-
     // In case of unmanageable data, just clear the receive buffer
     if (!isManaged)
     {

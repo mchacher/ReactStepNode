@@ -1,7 +1,7 @@
 #ifndef I_DECODER_H
 #define I_DECODER_H
 
-#include "com\message_format.h"
+#include "../message_format.h"
 
 namespace communication {
 
@@ -10,7 +10,7 @@ public:
   iHandler() = default;
   virtual ~iHandler() = default;
 
-  virtual bool run(SERIAL_MSG_TYPE type) = 0;
+  virtual bool run(SERIAL_MSG_TYPE type, uint8_t *packet, uint8_t size) = 0;
 
 };
 

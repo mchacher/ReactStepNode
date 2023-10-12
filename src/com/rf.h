@@ -4,8 +4,8 @@
 #ifndef RF_H
 #define RF_H
 
-#include "com\decoder\iHandler.h"
-#include "com\message_format.h"
+#include "decoder/iHandler.h"
+#include "message_format.h"
 #include <RF24.h>
 #include <RF24Mesh.h>
 #include <RF24Network.h>
@@ -79,7 +79,7 @@ private:
   RF24Mesh mMesh;
 
 #if RP2040 == 1
-  arduino::MbedSPI mSpiRP2040;
+  arduino::MbedSPI SPI0;
 #endif
 
   uint8_t mNodeId;
@@ -97,5 +97,6 @@ private:
 }
 
 #endif
-#endif
 static communication::rf comm;
+
+#endif
