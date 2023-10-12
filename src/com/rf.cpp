@@ -94,10 +94,6 @@ void rf::receive()
     RF24NetworkHeader header;
     uint8_t packet[256];
     uint8_t size = mNetwork.read(header, &packet);
-    for (int i = 0; i < size; i++)
-    {
-      Log.noticeln("%i", packet[i]);
-    }
     Log.noticeln(F("[%s]: message from Node ID [%d]"), __func__, header.from_node);
 
     bool isManaged(false);
