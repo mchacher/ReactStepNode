@@ -38,25 +38,6 @@ void rf::setup()
 #endif
   mRadio.setPALevel(RF24_PA_MIN, 0);
 
-  // if (!mMesh.begin())
-  // {
-  //   if (0 != mNodeId && mRadio.isChipConnected())
-  //   {
-  //     do
-  //     {
-  //       // mesh.renewAddress() will return MESH_DEFAULT_ADDRESS on failure to connect
-  //       Log.noticeln(F("[%s] Could not connect to network. Connecting to the mesh..."), __func__);
-  //     } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
-  //   }
-  //   else
-  //   {
-  //     Log.noticeln(F("[%s] Radio hardware not responding."), __func__);
-  //     while (1)
-  //     {
-  //       // Hold in an infinite loop or manage this case using screen to show a user message.
-  //     }
-  //   }
-  // }
   if (!mMesh.begin())
   {
     if (mRadio.isChipConnected())
@@ -85,8 +66,6 @@ void rf::receive()
   // Call mesh.update to keep the network updated
   // todo: move it in dedicated method to be call each about 2 seconds
   mMesh.update();
-  
-
 
   // Check for incoming data from the sensors
   if (mNetwork.available())

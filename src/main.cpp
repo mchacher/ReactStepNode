@@ -38,8 +38,9 @@ void taskCommReceiveFunction()
 {
   comm.receive();
 }
-void taskCommSendFunction()
+void taskCommHeartbeat()
 {
+  // Heartbeat pack is already build at setup 
   comm.masterSend(&heartBeat, static_cast<SERIAL_MSG_TYPE>(heartBeat.type));
 }
 #endif
@@ -59,7 +60,7 @@ Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
 
 #if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
-Task taskCommSend(TASK_CYCLE_HEARTBEAT, &taskCommSendFunction);
+Task taskCommSend(TASK_CYCLE_HEARTBEAT, &taskCommHeartbeat);
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
 #endif
 
