@@ -32,19 +32,6 @@ bool eventHandler::run(SERIAL_MSG_TYPE type, uint8_t *packet, uint8_t size)
       break;
     }
   }
-
-    // RF24NetworkHeader header;
-    // uint8_t packet[256];
-    // mNetwork.read(header, &packet);
-    // for (int i = 0; i < sizeof(PACKET_EVENT); i++)
-    // {
-    //   Log.noticeln("%i", packet[i]);
-    // }
-    for (int i = 0; i < size; i++)
-    {
-      Log.noticeln("%i", packet[i]);
-    }
-
   return isSuccess;
 }
 
