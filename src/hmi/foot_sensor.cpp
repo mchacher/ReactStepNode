@@ -3,6 +3,7 @@
 #include <ArduinoLog.h>
 #include "../reactmagic/event_registry.h"
 #include "../hardware_config.h"
+#include "../app_config.h"
 
 #if (DIGITAL_FOOT_SENSOR == 1)
 
@@ -42,13 +43,13 @@ FootSensorState checkFootSensorState(Button& sensor)
 
     if (sensor.wasPressed())
     {
-        Log.verboseln(F("foot_sensor_task: FOOT_SENSOR_PRESSED"));
+        Log.noticeln(F("foot_sensor_task: FOOT_SENSOR_PRESSED"));
         return FOOT_SENSOR_PRESSED;
     }
 
     if (sensor.wasReleased())
     {
-        Log.verboseln(F("foot_sensor_task: FOOT_SENSOR_RELEASED"));
+        Log.noticeln(F("foot_sensor_task: FOOT_SENSOR_RELEASED"));
         return FOOT_SENSOR_RELEASED;
     }
 

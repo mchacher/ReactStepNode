@@ -1,4 +1,5 @@
 #include "react_scheduler.h"
+#include "ArduinoLog.h"
 
 /*
  * @brief Constructor for the Task class.
@@ -79,10 +80,15 @@ void ReactScheduler::init()
  */
 void ReactScheduler::addTask(Task &task)
 {
-    if (taskCount < 10)
+    if (taskCount < MAX_TASKS)
     { // Ensure we don't exceed the maximum number of tasks
         tasks[taskCount] = &task;
         taskCount++;
+    }
+    else
+    {
+        Log.noticeln(F("[%s] React Scheduler cannot handle more than %i tasks"), __func__, MAX_TASKS);
+        while(true);
     }
 }
 

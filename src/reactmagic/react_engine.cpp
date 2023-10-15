@@ -207,7 +207,8 @@ void handleEndCommand()
 {
     // Handle END command
     Log.noticeln(F("react_engine: Command END"));
-    event_registry_push(EVENT_SYS_TYPE_DONE);    
+    event_registry_push(EVENT_SYS_TYPE_DONE);
+    context.state = RE_DONE;
 }
 
 /**
@@ -586,6 +587,9 @@ void react_engine_task()
         context.state = saved_context.state;
         context.timer = saved_context.timer;
         event_registry_enable_app_event();
+        break;
+    case RE_DONE:
+        // do nothing, React Code has been successfully executed.
         break;
     default:
         break;

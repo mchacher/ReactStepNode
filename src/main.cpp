@@ -5,6 +5,7 @@
 #include <Arduino.h>
 #include <ArduinoLog.h>
 #include "hardware_config.h"
+#include "app_config.h"
 #include <printf.h>
 #include "drivers/mic.h"
 #include "hmi/display.h"
@@ -23,10 +24,7 @@
 #endif
 #include "react_scheduler.h"
 
-#define TASK_CYCLE_FAST 20
-#define TASK_CYCLE_MEDIUM 100
-#define TASK_CYCLE_SLOW 250
-#define TASK_CYCLE_HEARTBEAT 5000
+
 
 ReactScheduler runner;
 
@@ -38,6 +36,13 @@ void taskCommReceiveFunction()
 {
   comm.receive();
 }
+
+void rf_task()
+{
+  comm.rf_task();
+}
+
+
 // void taskCommHeartbeat()
 // {
 //   // Heartbeat pack is already build at setup 
@@ -62,6 +67,7 @@ Task task_button(TASK_CYCLE_FAST, &button_task);
 
 #if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
+Task task_rf(TASK_CYCLE_FAST, &rf_task);
 // Task taskCommSend(TASK_CYCLE_HEARTBEAT, &taskCommHeartbeat);
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
 #endif
@@ -343,7 +349,9 @@ void setup()
 #if REACT_MESH == 1
   runner.addTask(taskCommReceive);
   taskCommReceive.enable();
-  Log.noticeln(F("--- taskCommReceive: added and enabled"));
+  Log.noticeln(F("taskCommReceive: added and enabled"));
+  runner.addTask(task_rf);
+  task_rf.enable();
   // runner.addTask(taskCommSend);
   // taskCommSend.enable();
   // Log.noticeln(F("--- taskCommSend: added and enabled"));

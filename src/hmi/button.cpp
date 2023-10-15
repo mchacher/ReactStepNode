@@ -3,6 +3,7 @@
 #include "../reactmagic/event_registry.h"
 #include "ArduinoLog.h"
 #include "hardware_config.h"
+#include "app_config.h"
 #include <JC_Button.h>
 
 #if REACT_MESH == 1

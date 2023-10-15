@@ -62,6 +62,18 @@ typedef struct __attribute__((__packed__))
   EVENT event;
 } AIR_PACKET_EVENT;
 
+
+/**
+ * @brief serial packet
+ *
+ * @return typedef struct
+ */
+typedef struct __attribute__((__packed__))
+{
+  uint8_t product_state;
+} AIR_PACKET_HEARBEAT;
+
+
 /**
  * @brief log payload
  *
