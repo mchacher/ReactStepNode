@@ -12,7 +12,7 @@ public:
   eventHandler(RF24Network network);
   virtual ~eventHandler() = default;
 
-  virtual bool run(SERIAL_MSG_TYPE type, uint8_t *packet, uint8_t size) override;
+  virtual bool run(MSG_TYPE type, uint8_t *packet, uint8_t size) override;
 
 private:
 

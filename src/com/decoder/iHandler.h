@@ -10,7 +10,7 @@ public:
   iHandler() = default;
   virtual ~iHandler() = default;
 
-  virtual bool run(SERIAL_MSG_TYPE type, uint8_t *packet, uint8_t size) = 0;
+  virtual bool run(MSG_TYPE type, uint8_t *packet, uint8_t size) = 0;
 
 };
 

@@ -32,35 +32,37 @@ ReactScheduler runner;
 
 #if REACT_MESH == 1
 
-PACKET_HEADER heartBeat;
+// PACKET_HEADER heartBeat;
 
 void taskCommReceiveFunction()
 {
   comm.receive();
 }
-void taskCommHeartbeat()
-{
-  // Heartbeat pack is already build at setup 
-  comm.masterSend(&heartBeat, static_cast<SERIAL_MSG_TYPE>(heartBeat.type));
-}
+// void taskCommHeartbeat()
+// {
+//   // Heartbeat pack is already build at setup 
+//   comm.masterSend(&heartBeat, static_cast<SERIAL_MSG_TYPE>(heartBeat.type));
+// }
 #endif
 
 // Tasks
 Task task_led(TASK_CYCLE_FAST, &led_task);
 Task task_react_engine(REACT_ENGINE_CYCLE_TIME, &react_engine_task);
 Task task_event_registry(TASK_CYCLE_SLOW, &event_registry_task);
+Task task_display(TASK_CYCLE_MEDIUM, &display_task);
+Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
+
 #if DIGITAL_FOOT_SENSOR == 1
 Task task_foot_sensor(TASK_CYCLE_FAST, &foot_sensor_task);
 #endif
-Task task_display(TASK_CYCLE_MEDIUM, &display_task);
+
 #if LOCAL_COMMAND_BUTTONS == 1
 Task task_button(TASK_CYCLE_FAST, &button_task);
 #endif
-Task task_state_machine(TASK_CYCLE_MEDIUM, &state_machine_task);
 
 #if REACT_MESH == 1
 Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
-Task taskCommSend(TASK_CYCLE_HEARTBEAT, &taskCommHeartbeat);
+// Task taskCommSend(TASK_CYCLE_HEARTBEAT, &taskCommHeartbeat);
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
 #endif
 
@@ -286,7 +288,7 @@ void setup()
   // Init communication module
   comm.setup();
   // build the heart beat message
-  comm.buildHeader(heartBeat, SERIAL_MSG_TYPE_HEARTBEAT, sizeof(heartBeat));
+  // comm.buildHeader(heartBeat, MSG_TYPE_HEARTBEAT, sizeof(heartBeat));
 
 #else
   Log.noticeln(F("Starting React Step Node - REACT MESH is not activated!"));
@@ -342,7 +344,7 @@ void setup()
   runner.addTask(taskCommReceive);
   taskCommReceive.enable();
   Log.noticeln(F("--- taskCommReceive: added and enabled"));
-  runner.addTask(taskCommSend);
+  // runner.addTask(taskCommSend);
   // taskCommSend.enable();
   // Log.noticeln(F("--- taskCommSend: added and enabled"));
 #endif

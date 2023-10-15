@@ -42,7 +42,7 @@ public:
    * @param data payload to be send
    * @return bool in success even false
    **********************************************************************/
-  bool send(uint16_t destNode, const void* data, SERIAL_MSG_TYPE type);
+  bool send(uint16_t destNode, const void* data, MSG_TYPE type);
 
   /*!********************************************************************
    * @brief Send data over RF24 to master
@@ -50,7 +50,7 @@ public:
    * @param type data type
    * @return bool in success even false
    **********************************************************************/
-  bool masterSend(const void* data, SERIAL_MSG_TYPE type);
+  bool masterSend(const void* data, MSG_TYPE type);
 
   /*!********************************************************************
    * @brief Return the current Node Id
@@ -63,15 +63,15 @@ public:
    **********************************************************************/
   void incrementNodeId();
 
-  /*!********************************************************************
-   * @brief Useful to build communication header
-   * @param header
-   **********************************************************************/
-  void buildHeader(PACKET_HEADER& header, SERIAL_MSG_TYPE type, uint8_t data_length);
+  // /*!********************************************************************
+  //  * @brief Useful to build communication header
+  //  * @param header
+  //  **********************************************************************/
+  // void buildHeader(PACKET_HEADER& header, MSG_TYPE type, uint8_t data_length);
 
-protected:
+  // protected:
 
-  uint16_t generatePacketId();
+  //   uint16_t generatePacketId();
 
 private:
   RF24 mRadio;

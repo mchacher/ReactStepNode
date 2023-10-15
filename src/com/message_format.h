@@ -9,24 +9,25 @@
 #define MESSAGE_FORMAT_H
 
 #include "Arduino.h"
-#include "reactmagic/event_type.h"
+#include "../reactmagic/event_type.h"
 
 #define DATA_BUFFER_SIZE 252   // UART_BUFFER_SIZE - HEADER_SIZE
 #define LOG_MESSAGE_SIZE 128
 #define FILE_CHUNK_SIZE  196
 #define FILE_NAME_SIZE   16
+
  /**
   * @brief serial msg types
   *
   */
 typedef enum
 {
-  SERIAL_MSG_TYPE_HEARTBEAT = 0,
-  SERIAL_MSG_TYPE_LOG = 1,
-  SERIAL_MSG_TYPE_SYS = 2,
-  SERIAL_MSG_TYPE_FILE = 3, // for file transfer from a computer
-  SERIAL_MSG_TYPE_EVENT = 4
-} SERIAL_MSG_TYPE;
+  MSG_TYPE_HEARTBEAT = 0,
+  MSG_TYPE_LOG = 1,
+  MSG_TYPE_SYS = 2,
+  MSG_TYPE_FILE = 3, // for file transfer from a computer
+  MSG_TYPE_EVENT = 4
+} MSG_TYPE;
 
 /**
  * @brief serial packet header
@@ -38,7 +39,7 @@ typedef struct __attribute__((__packed__))
   uint16_t packet_id;
   uint8_t type;
   uint8_t data_length;
-} PACKET_HEADER;
+} SERIAL_PACKET_HEADER;
 
 /**
  * @brief serial packet
@@ -47,9 +48,9 @@ typedef struct __attribute__((__packed__))
  */
 typedef struct __attribute__((__packed__))
 {
-  PACKET_HEADER header;
+  SERIAL_PACKET_HEADER header;
   uint8_t payload[DATA_BUFFER_SIZE];
-} PACKET;
+} SERIAL_PACKET;
 
 /**
  * @brief serial packet
@@ -58,9 +59,8 @@ typedef struct __attribute__((__packed__))
  */
 typedef struct __attribute__((__packed__))
 {
-  PACKET_HEADER header;
   EVENT event;
-} PACKET_EVENT;
+} AIR_PACKET_EVENT;
 
 /**
  * @brief log payload

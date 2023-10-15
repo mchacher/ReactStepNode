@@ -79,7 +79,7 @@ void rf::receive()
 
     for (const auto& decoder : mDecoderList)
     {
-      isManaged = decoder->run(static_cast<SERIAL_MSG_TYPE>(header.type), packet, size);
+      isManaged = decoder->run(static_cast<MSG_TYPE>(header.type), packet, size);
       if (isManaged)
       {
         // The first object which can handle this message will finish this transaction
@@ -96,7 +96,7 @@ void rf::receive()
   }
 }
 
-bool rf::send(uint16_t destNode, const void* data, SERIAL_MSG_TYPE type)
+bool rf::send(uint16_t destNode, const void* data, MSG_TYPE type)
 {
   bool isSuccess(false);
   if (mIsReady) {
@@ -132,7 +132,7 @@ bool rf::send(uint16_t destNode, const void* data, SERIAL_MSG_TYPE type)
   return isSuccess;
 }
 
-bool rf::masterSend(const void* data, SERIAL_MSG_TYPE type)
+bool rf::masterSend(const void* data, MSG_TYPE type)
 {
   return send(0, data, type);
 }
@@ -160,21 +160,21 @@ void rf::incrementNodeId()
   mMesh.setNodeID(mNodeId);
 }
 
-void rf::buildHeader(PACKET_HEADER& header, SERIAL_MSG_TYPE type, uint8_t data_length)
-{
-  header.packet_id = generatePacketId();
-  header.type = type;
-  header.data_length = data_length;
-}
+// void rf::buildHeader(PACKET_HEADER& header, MSG_TYPE type, uint8_t data_length)
+// {
+//   header.packet_id = generatePacketId();
+//   header.type = type;
+//   header.data_length = data_length;
+// }
 
-uint16_t rf::generatePacketId()
-{
-  if (0xFFFF <= mCurrentPacketId + 1)
-  {
-    mCurrentPacketId = 0;
-  }
-  return mCurrentPacketId++;
-}
+// uint16_t rf::generatePacketId()
+// {
+//   if (0xFFFF <= mCurrentPacketId + 1)
+//   {
+//     mCurrentPacketId = 0;
+//   }
+//   return mCurrentPacketId++;
+// }
 
 }
 #endif
