@@ -62,7 +62,7 @@ void effect_music()
   mic_count++;
 
   // Define custom hue values for your desired color order
-  uint16_t colorHues[] = { 0, 240, 120, 60, 30, 300, 0 };
+  uint16_t colorHues[] = {0, 240, 120, 60, 30, 300, 0};
 
   // Check if we've collected SAMPLES samples
   if (mic_count >= SAMPLES)
@@ -74,8 +74,8 @@ void effect_music()
     int hueIndex = map(mic_average, 0, 400, 0, 7);
     uint8_t saturation = 255;
     uint8_t value = 255;
-    if (hueIndex > 0)
-      Log.noticeln("mic_average %i, hueIndex %i", mic_average, hueIndex);
+    // if (hueIndex > 0)
+    //   // Log.noticeln("mic_average %i, hueIndex %i", mic_average, hueIndex);
     if (hueIndex == 0)
     {
       saturation = 0;
@@ -101,7 +101,6 @@ void effect_music()
  */
 void led_task()
 {
-
 
   if (current_effect == LED_EFFECTS::EFFECT_NONE)
   {
