@@ -71,7 +71,7 @@
 //     0xB3, 0x20, 0x83, 0x00, 0x05, 0x20, 0xA0, 0x00, 0x00, 0xFF, 0x82, 0x41, 0x81};
 
 // below is a kind of TRAFFIC LIGHT code to illustrate TIMER non blocking command
-const uint8_t react_code[256] =
+const uint8_t react_code[255] =
     {
         CMD_START,
         CMD_TIMER, 0, 3, ARGS::TRUE,
