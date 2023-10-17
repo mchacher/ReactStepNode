@@ -79,7 +79,7 @@ bool event_registry_is_full_sys_event()
 
 /**
  * @brief Push an event onto the appropriate event registry (queue_app_event or queue_sys_event)
- *        based on the event type.
+ *        based on the event type. Add timestamp to the event when pushing it.
  *
  * @param event_type The event type to push onto the queue.
  * @return true if the event was successfully pushed, false if the queue is full.
@@ -119,12 +119,31 @@ bool event_registry_push(EVENT_TYPE event_type)
 /**
  * @brief Push an app event
  *
- * @param event The app event type to push onto the queue.
+ * @param event The app event to push onto the queue.
  * @return true if the event was successfully pushed, false if the queue is full.
  */
 bool event_registry_push_app_event(EVENT event)
 {
-    return queue_app_event.push(event);
+    bool is_success = false;
+    if (app_event)
+    {
+        is_success = queue_app_event.push(event);
+    }
+    return is_success;
+}
+
+
+/**
+ * @brief Push a system event
+ *
+ * @param event The sys event to push onto the queue.
+ * @return true if the event was successfully pushed, false if the queue is full.
+ */
+bool event_registry_push_sys_event(EVENT event)
+{
+    bool is_success = false;
+    is_success = queue_sys_event.push(event);
+    return is_success;
 }
 
 bool event_registry_get_app_event(EVENT_TYPE type, unsigned long freshness, EVENT &event)
