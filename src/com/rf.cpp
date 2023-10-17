@@ -68,15 +68,15 @@ namespace communication
     if (mNetwork.available())
     {
       RF24NetworkHeader header;
-      uint8_t packet[256];
-      uint8_t size = mNetwork.read(header, &packet);
+      RF_PACKET packet;
+      uint8_t size = mNetwork.read(header, (uint8_t*)&packet);
       Log.noticeln(F("[%s]: message from Node ID [%d]"), __func__, header.from_node);
 
       bool isManaged(false);
 
       for (const auto &decoder : mDecoderList)
       {
-        isManaged = decoder->run(static_cast<MSG_TYPE>(header.type), packet, size);
+        isManaged = decoder->run(static_cast<MSG_TYPE>(header.type), (uint8_t*)&packet, size);
         if (isManaged)
         {
           // The first object which can handle this message will finish this transaction
@@ -93,7 +93,7 @@ namespace communication
     }
   }
 
-  bool rf::send(uint16_t destNode, const void *data, MSG_TYPE type)
+  bool rf::send(uint16_t destNode, uint8_t type, uint8_t *packet, uint8_t size)
   {
     bool isSuccess(false);
     if (mIsReady)
@@ -101,7 +101,7 @@ namespace communication
       // Call mesh.update to keep the network updated
       mMesh.update();
 
-      if (!mMesh.write(&data, type, sizeof(data)))
+      if (!mMesh.write(destNode, packet, type, size))
       {
         // If a write fails, check connectivity to the mesh network
         if (!mMesh.checkConnection())
@@ -114,12 +114,12 @@ namespace communication
         }
         else
         {
-          Log.noticeln(F("[%s] Send fail, Test OK"), __func__);
+          Log.noticeln(F("[%s] Failed to to send to node [%d]"), __func__, mNodeId);
         }
       }
       else
       {
-        Log.verboseln(F("[%s] Send OK - [%d] Data = [%lu]"), __func__, mNodeId, data);
+        Log.verboseln(F("[%s] Send OK - to node [%d]"), __func__, mNodeId);
         isSuccess = true;
       }
     }
@@ -128,11 +128,6 @@ namespace communication
       Log.noticeln(F("[%s] Communication stask isn't ready to send data"), __func__);
     }
     return isSuccess;
-  }
-
-  bool rf::masterSend(const void *data, MSG_TYPE type)
-  {
-    return send(0, data, type);
   }
 
   uint16_t rf::getNodeId()
@@ -184,11 +179,15 @@ namespace communication
     //  Log.noticeln(F("[%s]: tick %i / %i"), __func__, tick, PERIOD_MESH_UPDATE);
     if ((tick % PERIOD_HEARTBEAT) == 0)
     {
-      // Send heartbeat
-      AIR_PACKET_HEARBEAT aph;
-      aph.product_state = state_machine_get_active_state();
-      this->send(0, &aph, MSG_TYPE_HEARTBEAT);
       Log.verboseln(F("[%s]: updating mesh network and sending heartbeat"), __func__);
+      // Send heartbeat
+      RF_PACKET packet;
+      packet.payload[0] = state_machine_get_active_state();
+      if (this->send(0, MSG_TYPE_HEARTBEAT, (uint8_t *)&packet, 1))
+      {
+        Log.noticeln(F("[%s]: successfully sent heartbeat"), __func__);
+      }
+      
     }
   }
 }

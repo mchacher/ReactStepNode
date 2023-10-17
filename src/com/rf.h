@@ -46,15 +46,7 @@ namespace communication
      * @param data payload to be send
      * @return bool in success even false
      **********************************************************************/
-    bool send(uint16_t destNode, const void *data, MSG_TYPE type);
-
-    /*!********************************************************************
-     * @brief Send data over RF24 to master
-     * @param data payload to be send
-     * @param type data type
-     * @return bool in success even false
-     **********************************************************************/
-    bool masterSend(const void *data, MSG_TYPE type);
+    bool send(uint16_t destNode, uint8_t type, uint8_t *packet, uint8_t size);
 
     /*!********************************************************************
      * @brief Return the current Node Id
