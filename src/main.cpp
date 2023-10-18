@@ -269,28 +269,14 @@ void setup()
   delay(1000);
 
   Log.begin(LOG_LEVEL_NOTICE, &Serial);
-
-  Log.noticeln(F("[%s] Starting UP"), __func__);
+  Log.noticeln(F("[%s] Initializing ..."), __func__);
 
 #if REACT_MESH == 1
   // ONLY FOR ADRI testing (without react step proto)
   randomSeed(analogRead(0));
   uint8_t rand(random(256));
-  for (int i = 0; i <= rand; i++)
-  {
-    comm.incrementNodeId();
-  }
-
+  comm.setNodeID(rand);
   Log.noticeln(F("[%s] Starting React Step Node with ID: [%d]"), __func__, comm.getNodeId());
-  if (0 == comm.getNodeId())
-  {
-    Log.noticeln(F(" ---------- MASTER ----------"));
-  }
-  else
-  {
-    Log.noticeln(F("---------- NODE %d ----------"), comm.getNodeId());
-  }
-
   // Init communication module
   comm.setup();
   // build the heart beat message
