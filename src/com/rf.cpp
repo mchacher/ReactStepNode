@@ -26,7 +26,7 @@ namespace communication
 
   void rf::setup()
   {
-    Log.noticeln(F("[%s] Node ID [%d]"), __func__, mNodeId);
+    Log.verboseln(F("[%s] Node ID [%d]"), __func__, mMesh.getNodeID());
 #if RP2040 == 1
     SPI0.begin();
     if (!mRadio.begin(&SPI0))
@@ -37,7 +37,6 @@ namespace communication
     }
 #endif
     mRadio.setPALevel(RF24_PA_MIN, 0);
-
     if (!mMesh.begin())
     {
       if (mRadio.isChipConnected())
@@ -58,7 +57,7 @@ namespace communication
       }
     }
     mIsReady = true;
-    Log.noticeln(F("[%s] Communication stack READY"), __func__);
+    Log.noticeln(F("[%s] RF communication ready with Node ID: [%i]"), __func__, mMesh.getNodeID());
   }
 
   void rf::receive()
@@ -140,15 +139,23 @@ namespace communication
     mNodeId = (mNodeId + 1) % MAX_NODE_ID;
 
     // Node ID 0 and 1 are reserved for Master
-    if (0 == mNodeId)
-    {
-      mNodeId = 2;
-    }
-    if (1 == mNodeId)
-    {
-      mNodeId = 2;
-    }
+    // ???  @Adrien: pourquoi 1 est réservé pour le Master ???
+    // dans le doute j'ai commenté ton code ci-dessous
+    // if (0 == mNodeId)
+    // {
+    //   mNodeId = 2;
+    // }
+    // if (1 == mNodeId)
+    // {
+    //   mNodeId = 2;
+    // }
 
+    mMesh.setNodeID(mNodeId);
+  }
+
+  void rf::setNodeID(uint8_t id)
+  {
+    mNodeId = id;
     mMesh.setNodeID(mNodeId);
   }
 
@@ -168,7 +175,7 @@ namespace communication
   //   return mCurrentPacketId++;
   // }
 
-#define PERIOD_HEARTBEAT (2000 / TASK_CYCLE_FAST) // every 2s, assuming 20ms as fast cycle (TODO, check what is the right timing)
+
 
   void rf::rf_task()
   {
@@ -185,7 +192,7 @@ namespace communication
       packet.payload[0] = state_machine_get_active_state();
       if (this->send(0, MSG_TYPE_HEARTBEAT, (uint8_t *)&packet, 1))
       {
-        Log.noticeln(F("[%s]: successfully sent heartbeat"), __func__);
+        Log.verboseln(F("[%s]: successfully sent heartbeat"), __func__);
       }
       
     }

@@ -59,6 +59,8 @@ namespace communication
      **********************************************************************/
     void incrementNodeId();
 
+    void setNodeID(uint8_t id);
+
     // /*!********************************************************************
     //  * @brief Useful to build communication header
     //  * @param header
