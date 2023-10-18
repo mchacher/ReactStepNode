@@ -68,14 +68,14 @@ namespace communication
     {
       RF24NetworkHeader header;
       RF_PACKET packet;
-      uint8_t size = mNetwork.read(header, (uint8_t*)&packet);
+      uint8_t size = mNetwork.read(header, (uint8_t *)&packet);
       Log.noticeln(F("[%s]: message from Node ID [%d]"), __func__, header.from_node);
 
       bool isManaged(false);
 
       for (const auto &decoder : mDecoderList)
       {
-        isManaged = decoder->run(static_cast<MSG_TYPE>(header.type), (uint8_t*)&packet, size);
+        isManaged = decoder->run(static_cast<MSG_TYPE>(header.type), (uint8_t *)&packet, size);
         if (isManaged)
         {
           // The first object which can handle this message will finish this transaction
@@ -136,21 +136,19 @@ namespace communication
 
   void rf::incrementNodeId()
   {
-    mNodeId = (mNodeId + 1) % MAX_NODE_ID;
+    mNodeId = (mNodeId + 1) % (MAX_NODES - 1);
 
     // Node ID 0 and 1 are reserved for Master
     // ???  @Adrien: pourquoi 1 est réservé pour le Master ???
     // dans le doute j'ai commenté ton code ci-dessous
-    // if (0 == mNodeId)
-    // {
-    //   mNodeId = 2;
-    // }
+    if (0 == mNodeId)
+    {
+      mNodeId = 1;
+    }
     // if (1 == mNodeId)
     // {
     //   mNodeId = 2;
     // }
-
-    mMesh.setNodeID(mNodeId);
   }
 
   void rf::setNodeID(uint8_t id)
@@ -175,15 +173,12 @@ namespace communication
   //   return mCurrentPacketId++;
   // }
 
-
-
   void rf::rf_task()
   {
     static uint16_t tick = 0;
     tick += 1;
     // Call mesh.update to keep the network updated
     mMesh.update();
-    //  Log.noticeln(F("[%s]: tick %i / %i"), __func__, tick, PERIOD_MESH_UPDATE);
     if ((tick % PERIOD_HEARTBEAT) == 0)
     {
       Log.verboseln(F("[%s]: updating mesh network and sending heartbeat"), __func__);
@@ -194,8 +189,9 @@ namespace communication
       {
         Log.verboseln(F("[%s]: successfully sent heartbeat"), __func__);
       }
-      
     }
+    // check if any message received
+    this->receive();
   }
 }
 #endif

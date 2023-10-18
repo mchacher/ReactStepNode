@@ -19,35 +19,21 @@
 #endif
 
 #if REACT_MESH == 1
-
 #include "com/rf.h"
 #endif
-#include "react_scheduler.h"
 
+#include "react_scheduler.h"
 
 
 ReactScheduler runner;
 
 #if REACT_MESH == 1
 
-// PACKET_HEADER heartBeat;
-
-void taskCommReceiveFunction()
-{
-  comm.receive();
-}
-
 void rf_task()
 {
   comm.rf_task();
 }
 
-
-// void taskCommHeartbeat()
-// {
-//   // Heartbeat pack is already build at setup 
-//   comm.masterSend(&heartBeat, static_cast<SERIAL_MSG_TYPE>(heartBeat.type));
-// }
 #endif
 
 // Tasks
@@ -66,7 +52,6 @@ Task task_button(TASK_CYCLE_FAST, &button_task);
 #endif
 
 #if REACT_MESH == 1
-Task taskCommReceive(TASK_CYCLE_FAST, &taskCommReceiveFunction);
 Task task_rf(TASK_CYCLE_FAST, &rf_task);
 // Task taskCommSend(TASK_CYCLE_HEARTBEAT, &taskCommHeartbeat);
 // Be careful, the receive task for the master shall work fastly (at 1s it isn't work)
@@ -213,14 +198,14 @@ void handle_set_state(EVENT event)
   switch (event.type)
   {
   case EVENT_SYS_TYPE_SET_LP:
-    Log.verboseln(F("state_machine_task: SET event, switching to READY state" CR));
+    Log.noticeln(F("state_machine_task: SET event, changing node ID"));
     display_blink_numbers(false);
     state_machine_switch_state(READY);
     display_message(MSG_IDLE);
     led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
     break;
   case EVENT_SYS_TYPE_SET_SP:
-    Log.verboseln(F("state_machine_task: SET_SP event" CR));
+    Log.verboseln(F("state_machine_task: SET_SP event"));
 #if REACT_MESH == 1
     comm.incrementNodeId();
     display_number(comm.getNodeId());
@@ -274,27 +259,16 @@ void setup()
 #if REACT_MESH == 1
   // ONLY FOR ADRI testing (without react step proto)
   randomSeed(analogRead(0));
-  uint8_t rand(random(256));
+  uint8_t rand(random(MAX_NODES));
   comm.setNodeID(rand);
   Log.noticeln(F("[%s] Starting React Step Node with ID: [%d]"), __func__, comm.getNodeId());
   // Init communication module
   comm.setup();
-  // build the heart beat message
-  // comm.buildHeader(heartBeat, MSG_TYPE_HEARTBEAT, sizeof(heartBeat));
-
 #else
   Log.noticeln(F("Starting React Step Node - REACT MESH is not activated!"));
 #endif
-  // Initialize Tasks
-  Log.noticeln(F("Initialized scheduler"));
 
-#if defined(MINI_STEP_MOCK_UP)
-  Log.notice(F("Main: Starting Mini Step Mockup"));
-#elif defined(MICRO_STEP_MOCK_UP)
-  Log.noticeln(F("Main: Starting Micro Step Mockup"));
-#endif
   // initialize scheduler
-  Log.noticeln(F("Main: initializing scheduler"));
   runner.init();
   Log.notice(F("Main: launching tasks"));
 
@@ -333,16 +307,9 @@ void setup()
   runner.addTask(task_display);
   task_display.enable();
 #if REACT_MESH == 1
-  runner.addTask(taskCommReceive);
-  taskCommReceive.enable();
-  Log.noticeln(F("taskCommReceive: added and enabled"));
   runner.addTask(task_rf);
   task_rf.enable();
-  // runner.addTask(taskCommSend);
-  // taskCommSend.enable();
-  // Log.noticeln(F("--- taskCommSend: added and enabled"));
 #endif
-
   setup_mic();
   event_registry_push(EVENT_SYS_TYPE_READY);
 }
