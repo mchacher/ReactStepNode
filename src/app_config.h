@@ -9,7 +9,7 @@
 #define TASK_CYCLE_FAST 20      // value in ms
 #define TASK_CYCLE_MEDIUM 100
 #define TASK_CYCLE_SLOW 250
-// #define TASK_CYCLE_HEARTBEAT 5000
 
+#define PERIOD_HEARTBEAT (2000 / TASK_CYCLE_FAST) // every 2s, assuming 20ms as fast cycle (TODO, check what is the right timing)
 
 #endif
