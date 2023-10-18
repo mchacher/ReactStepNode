@@ -1,9 +1,6 @@
 #ifndef HARDWARE_CONFIG_H
 #define HARDWARE_CONFIG_H
 
-// Raspberry RP 2040 configuration
-#ifdef RP2040
-
 // TM 1637 display
 #define PIN_TM_1637_CLK     11
 #define PIN_TM_1637_DIO     10
@@ -33,35 +30,3 @@
 #define PIN_SCK             2
 
 #endif
-
-// Atemga 328 P configuration
-#ifdef ATMEGA328P
-
-// TM 1637 display
-#define PIN_TM_1637_CLK     2
-#define PIN_TM_1637_DIO     3
-
-// Foot Sensor
-#define PIN_PB_FOOT_LEFT    14
-#define PIN_PB_FOOT_RIGHT   15
-
-// Microphone
-#define PIN_MIC             A2
-
-// push buttons
-#define PIN_PB_SET          5
-#define PIN_PB_STOP         9
-#define PIN_PB_CUSTOM       6
-#define PIN_PB_PLAY_PAUSE   10
-
-// #leds are in the strip
-#define PIN_LED_DATA        4
-#define NUM_LEDS            3
-
-// RADIO
-#define PIN_CE              7
-#define PIN_CSN             8
-
-#endif
-
-#endif // CONFIG_H

@@ -3,15 +3,9 @@
 #include "mic.h"
 #include "hardware_config.h"
 
-#ifdef ATMEGA328P
-#define DC_OFFSET 256 // DC offset  [0]
-#define NOISE 25      // Noise/hum/interference [10]
-#endif
-
-#ifdef RP2040
 #define DC_OFFSET 256
 #define NOISE 140
-#endif
+
 
 
 uint16_t mic_read()

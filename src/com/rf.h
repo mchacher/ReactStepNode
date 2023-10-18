@@ -12,6 +12,7 @@
 #include <RF24Mesh.h>
 #include <RF24Network.h>
 #include <vector>
+#include <memory> 
 
 #define MESH_NOMASTER
 
@@ -90,9 +91,6 @@ namespace communication
     RF24Network mNetwork;
     RF24Mesh mMesh;
 
-#if RP2040 == 1
-    arduino::MbedSPI SPI0;
-#endif
 
     uint8_t mNodeId;
     static const uint8_t DEFAULT_NODE_ID;

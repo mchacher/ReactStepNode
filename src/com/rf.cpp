@@ -15,9 +15,6 @@ namespace communication
   rf::rf() : mRadio(PIN_CE, PIN_CSN),
              mNetwork(mRadio),
              mMesh(mRadio, mNetwork),
-#if RP2040 == 1
-             SPI0(PIN_MISO, PIN_MOSI, PIN_SCK),
-#endif
              mNodeId(DEFAULT_NODE_ID),
              mCurrentPacketId(0)
   {
@@ -27,15 +24,16 @@ namespace communication
   void rf::setup()
   {
     Log.verboseln(F("[%s] Node ID [%d]"), __func__, mMesh.getNodeID());
-#if RP2040 == 1
-    SPI0.begin();
-    if (!mRadio.begin(&SPI0))
+    SPI.setRX(PIN_MISO);
+    SPI.setTX(PIN_MOSI);
+    SPI.setSCK(PIN_SCK);
+    SPI.begin();
+    if (!mRadio.begin(&SPI))
     {
       Log.noticeln(F("[%s] radio hardware is not responding!!"), __func__);
       while (1)
         ;
     }
-#endif
     mRadio.setPALevel(RF24_PA_MIN, 0);
     if (!mMesh.begin())
     {
