@@ -12,4 +12,6 @@
 
 #define PERIOD_HEARTBEAT (2000 / TASK_CYCLE_FAST) // every 2s, assuming 20ms as fast cycle (TODO, check what is the right timing)
 
+#define MAX_NODES 100
+
 #endif
