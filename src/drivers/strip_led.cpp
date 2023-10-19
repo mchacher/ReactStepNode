@@ -1,8 +1,9 @@
 #include "Arduino.h"
 #include "strip_led.h"
 #include "ArduinoLog.h"
+#include "../hardware_config.h"
 
-StripLed::StripLed(uint16_t num_leds) : strip_led(num_leds, PIN_LED, NEO_GRB + NEO_KHZ800)
+StripLed::StripLed(uint16_t num_leds) : strip_led(num_leds, PIN_LED_DATA, NEO_GRB + NEO_KHZ800)
 {
 }
 
