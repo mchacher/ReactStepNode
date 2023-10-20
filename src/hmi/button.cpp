@@ -28,10 +28,16 @@ void button_setup()
     Log.notice(F("button: setup" CR));
 #if (LOCAL_COMMAND_BUTTONS == 1)
     pb_play_pause.begin();
-    pb_stop.begin();
     pb_custom.begin();
+    pb_stop.begin();
+    delay(50); // to avoid first false event
+    pb_play_pause.read();
+    pb_stop.read();
+    pb_custom.read();
 #endif
     pb_set.begin();
+    delay(50); // to avoid first false event
+    pb_set.read();
 }
 
 /**
@@ -79,14 +85,6 @@ void button_task()
     {
         event_registry_push(EVENT_SYS_TYPE_START);
         Log.noticeln(F("button task: PLAY PAUSE button pressed"));
-// #if REACT_MESH == 1
-//         // Todo: need to manage correctly the comm header
-//         PACKET_EVENT eventPacket;
-//         comm.buildHeader(eventPacket.header, SERIAL_MSG_TYPE_EVENT, sizeof(eventPacket));
-//         eventPacket.event = EVENT_SYS_TYPE_START;
-
-//         comm.masterSend(&eventPacket, SERIAL_MSG_TYPE_EVENT);
-// #endif
     }
 
     if (button_read(pb_stop) != BUTTON_NO_EVENT)

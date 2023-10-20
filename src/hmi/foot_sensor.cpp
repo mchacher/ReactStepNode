@@ -20,6 +20,9 @@ void foot_sensor_setup()
     Log.notice(F("foot_sensor: setup" CR));
     foot_sensor_left.begin();
     foot_sensor_right.begin();
+    delay(50);// to avoid first false event
+    foot_sensor_left.read();
+    foot_sensor_right.read();
 }
 
 
