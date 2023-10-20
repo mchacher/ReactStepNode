@@ -101,13 +101,21 @@ void handle_init_state(EVENT event)
     display_message(MSG_HELLO, 2);
     display_push_message_to_queue(MSG_IDLE, 0);
     led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
+    break;
   case EVENT_SYS_TYPE_SET_LP:
     state_machine_switch_state(SET);
-      Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
+    Log.noticeln(F("state_machine_task: SET event, switching to SET state"));
 #if REACT_MESH == 1
+      uint8_t nodeID = comm.getNodeId();
+      // first nodeID configuration
+      if (nodeID == 100)
+      {
+        comm.setNodeID(1);
+      }
       display_number(comm.getNodeId());
 #endif
       display_blink_numbers(true);
+      break;
   }
 }
 
@@ -209,6 +217,7 @@ void handle_set_state(EVENT event)
       Log.noticeln(F("state_machine_task: SET event, changing node ID"));
       data_storage_save(PersistentData::NODE_ID, comm.getNodeId());
       display_blink_numbers(false);
+      comm.releaseAddress();
       watchdog_reboot(0,0,500);
       while(true);
       // state_machine_switch_state(READY);
@@ -333,10 +342,12 @@ void setup()
   setup_mic();
   if (nodeID == 100)
   {
+      Log.noticeln(F("[%s] nodeID is 100, pushing EVENT_SYS_TYPE_SET_LP event"), __func__);
       event_registry_push(EVENT_SYS_TYPE_SET_LP);
   }
   else
   {
+      Log.noticeln(F("[%s] setup done, pushing EVENT_SYS_TYPE_READY"), __func__);
       event_registry_push(EVENT_SYS_TYPE_READY);
   }
 }

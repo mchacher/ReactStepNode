@@ -35,6 +35,7 @@ namespace communication
         ;
     }
     mRadio.setPALevel(RF24_PA_MIN, 0);
+    mMesh.setNodeID(mNodeId);
     if (!mMesh.begin())
     {
       if (mRadio.isChipConnected())
@@ -152,7 +153,12 @@ namespace communication
   void rf::setNodeID(uint8_t id)
   {
     mNodeId = id;
-    mMesh.setNodeID(mNodeId);
+    // mMesh.setNodeID(mNodeId);
+  }
+
+  void rf::releaseAddress()
+  {
+    mMesh.releaseAddress();
   }
 
   // void rf::buildHeader(PACKET_HEADER& header, MSG_TYPE type, uint8_t data_length)

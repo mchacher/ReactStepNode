@@ -86,6 +86,8 @@ namespace communication
      */
     void setNodeID(uint8_t id);
 
+    void releaseAddress();
+
   private:
     RF24 mRadio;
     RF24Network mNetwork;
