@@ -1,7 +1,0 @@
-20/10/2023
-- ajout d'un délai dans le setup des boutons, puis un read pour éviter des événements non désirés au démarrage
-- gestion du changement de node ID par le bouton set. 
-    - Si au démarrage on lit 255 (EEPROM non initialisée), on force un SET de l'adresse
-    - il faut rester appuyer sur le bouton SET pour passer en mode config
-    - simple appui incrémente le node ID
-    - appui long enregistre le nouveau node ID et redémarre le produit

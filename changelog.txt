@@ -1,0 +1,8 @@
+Changelog - 20/10/2023
+
+- Added delay in button setup, followed by a read to prevent unwanted events during startup.
+- Implemented node ID change management via the "set" button.
+    - If the initial read at startup returns 255 (indicating uninitialized EEPROM), a SET operation to configure the address is forced.
+    - To enter configuration mode, press and hold the SET button.
+    - A short press increments the node ID.
+    - A long press saves the new node ID and restarts the device.
