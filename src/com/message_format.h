@@ -11,11 +11,6 @@
 #include "Arduino.h"
 #include "../reactmagic/event_type.h"
 
-#define DATA_BUFFER_SIZE 252   // UART_BUFFER_SIZE - HEADER_SIZE
-#define LOG_MESSAGE_SIZE 128
-#define FILE_CHUNK_SIZE  196
-#define FILE_NAME_SIZE   16
-
  /**
   * @brief serial msg types
   *
@@ -36,7 +31,7 @@ typedef enum
  */
 typedef struct __attribute__((__packed__))
 {
-  uint8_t payload[255];
+  uint8_t payload[256];
 } RF_PACKET;
 
 #endif
