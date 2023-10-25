@@ -21,7 +21,9 @@ typedef enum
   MSG_TYPE_LOG = 1,
   MSG_TYPE_SYS = 2,
   MSG_TYPE_FILE = 3, // for file transfer from a computer
-  MSG_TYPE_EVENT = 4
+  MSG_TYPE_EVENT = 4,
+  MSG_TYPE_ACK = 5, // only for serial communication
+  MSG_TYPE_REACT_CODE = 6
 } MSG_TYPE;
 
 /**
