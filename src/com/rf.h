@@ -98,7 +98,7 @@ namespace communication
     static const uint8_t DEFAULT_NODE_ID;
     static bool mIsReady;
     uint16_t mCurrentPacketId;
-    std::vector<std::shared_ptr<iHandler>> mDecoderList;
+    std::vector<std::shared_ptr<iHandler>> mHandlerList;
   };
 }
 

@@ -55,11 +55,11 @@
 // };
 
 // const uint8_t react_code[] = {
-// 0x80, 0x85, 0x00, 0x03, 0x20, 0xA0, 0xFF, 0xFF, 
-// 0x00, 0x83, 0x00, 0x02, 0x21, 0x85, 0x00, 0x02, 
-// 0x21, 0xA0, 0x00, 0x80, 0x00, 0x83, 0x00, 0x02, 
-// 0x21, 0xA0, 0xFF, 0x00, 0x00, 0x83, 0x00, 0x02, 
-// 0x21, 0x86, 0x86, 0xA0, 0x00, 0x00, 0xFF, 0x82, 
+// 0x80, 0x85, 0x00, 0x03, 0x20, 0xA0, 0xFF, 0xFF,
+// 0x00, 0x83, 0x00, 0x02, 0x21, 0x85, 0x00, 0x02,
+// 0x21, 0xA0, 0x00, 0x80, 0x00, 0x83, 0x00, 0x02,
+// 0x21, 0xA0, 0xFF, 0x00, 0x00, 0x83, 0x00, 0x02,
+// 0x21, 0x86, 0x86, 0xA0, 0x00, 0x00, 0xFF, 0x82,
 // 0x41, 0x81
 // };
 
@@ -70,8 +70,15 @@
 //     0xB1, 0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0xB2, 0xFF, 0x20, 0xCC, 0x00, 0x00, 0x00,
 //     0xB3, 0x20, 0x83, 0x00, 0x05, 0x20, 0xA0, 0x00, 0x00, 0xFF, 0x82, 0x41, 0x81};
 
+static const int MAX_REPEAT_DEPTH = 5;
+static RepeatContext repeat_context[MAX_REPEAT_DEPTH];
+static uint8_t repeat_index = 0;
+static Context context;
+static Context saved_context;
+static uint8_t react_code_buffer[255] = {0};
+
 // below is a kind of TRAFFIC LIGHT code to illustrate TIMER non blocking command
-const uint8_t react_code[255] =
+uint8_t react_code[255] =
     {
         CMD_START,
         CMD_TIMER, 0, 3, ARGS::TRUE,
@@ -85,20 +92,19 @@ const uint8_t react_code[255] =
         CMD_WAIT_EVENT, EVENT_APP_TYPE_FOOT_PRESS_LEFT,
         CMD_END};
 
-
-
-static const int MAX_REPEAT_DEPTH = 5;
-static RepeatContext repeat_context[MAX_REPEAT_DEPTH];
-static uint8_t repeat_index = 0;
-static Context context;
-static Context saved_context;
-
 #define MAX_ASYNC_COMMANDS 10
 AsyncCommandsList<MAX_ASYNC_COMMANDS> asyncCommandsList;
 
+void react_engine_save_react_code(uint8_t *code)
+{
+    // copy new code in react_code_buffer
+    // will be copied in RE_READY state in the execution buffer (react_code)
+    memcpy(react_code_buffer, code, 255);
+}
 
 /**
- * @brief Change the color of the LED based on parameters. This is an Async React Command.
+ * @brief Change the color of the LED based on parameters. 
+ * This is an Async React Command.
  *
  * @param params param 0 - the color to apply
  */
@@ -109,7 +115,8 @@ void change_react_device_color(uint32_t *params)
 }
 
 /**
- * @brief Update foot press counter. This is an Async React Command.
+ * @brief Update foot press counter. 
+ * This is an Async React Command.
  *
  * @param params no paramater
  */
@@ -392,18 +399,18 @@ void handleRepeatCountCommand(uint8_t *bytecode)
 void handleRepeatEndCommand(uint8_t *bytecode)
 {
     Log.noticeln(F("react_engine: Command REPEAT_END"));
-    repeat_context[repeat_index-1].count--;
-    if (repeat_context[repeat_index-1].count != 0)
+    repeat_context[repeat_index - 1].count--;
+    if (repeat_context[repeat_index - 1].count != 0)
     {
-        context.pc = repeat_context[repeat_index-1].pc;
+        context.pc = repeat_context[repeat_index - 1].pc;
     }
     else if (repeat_index > 1)
     {
         repeat_index--;
     }
-    if (repeat_context[repeat_index-1].display == true)
+    if (repeat_context[repeat_index - 1].display == true)
     {
-        display_number(repeat_context[repeat_index-1].count);
+        display_number(repeat_context[repeat_index - 1].count);
     }
 }
 
@@ -471,7 +478,6 @@ void interpret_command(uint8_t *bytecode)
         break;
     }
 }
-
 
 void react_engine_clear_context()
 {
@@ -548,6 +554,11 @@ void react_engine_task()
     switch (context.state)
     {
     case RE_READY:
+        if (react_code_buffer[0] != 0)
+        {
+            memcpy(react_code, react_code_buffer, 255);
+            react_code_buffer[0] = 0;
+        }
         context.state = RE_RUN;
         event_registry_enable_app_event();
         break;

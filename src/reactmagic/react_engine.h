@@ -35,10 +35,10 @@ typedef struct  {
 } RepeatContext;
 
 
-
 void react_engine_setup();
 void react_engine_task();
 void react_engine_stop();
 void react_engine_pause();
+void react_engine_save_react_code(uint8_t* code);
 
 #endif

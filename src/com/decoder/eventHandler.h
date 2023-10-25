@@ -1,5 +1,5 @@
-#ifndef EVENT_DECODER_H
-#define EVENT_DECODER_H
+#ifndef EVENT_HANDLER_H
+#define EVENT_HANDLER_H
 
 #include "../message_format.h"
 #include <RF24Network.h>

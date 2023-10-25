@@ -4,6 +4,7 @@
 #if REACT_MESH == 1
 #include "ArduinoLog.h"
 #include "decoder/eventHandler.h"
+#include "decoder/reactCodeHandler.h"
 #include "../reactmagic/event_registry.h"
 #include "../reactmagic/event_type.h"
 #include "../state_machine.h"
@@ -18,8 +19,9 @@ namespace communication
              mNodeId(DEFAULT_NODE_ID),
              mCurrentPacketId(0)
   {
-    mDecoderList.push_back(std::make_shared<eventHandler>(mNetwork));
-  }
+    mHandlerList.push_back(std::make_shared<eventHandler>(mNetwork));
+    mHandlerList.push_back(std::make_shared<reactCodeHandler>(mNetwork));
+  } 
 
   void rf::setup()
   {
@@ -68,13 +70,13 @@ namespace communication
       RF24NetworkHeader header;
       RF_PACKET packet;
       uint8_t size = mNetwork.read(header, (uint8_t *)&packet);
-      Log.noticeln(F("[%s]: message from Node ID [%d]"), __func__, header.from_node);
+      Log.noticeln(F("[%s]: message from Node ID [%d], type [%i]"), __func__, header.from_node, header.type);
 
       bool isManaged(false);
 
-      for (const auto &decoder : mDecoderList)
+      for (const auto &handler : mHandlerList)
       {
-        isManaged = decoder->run(static_cast<MSG_TYPE>(header.type), (uint8_t *)&packet, size);
+        isManaged = handler->run(static_cast<MSG_TYPE>(header.type), (uint8_t *)&packet, size);
         if (isManaged)
         {
           // The first object which can handle this message will finish this transaction
@@ -85,7 +87,7 @@ namespace communication
       // In case of unmanageable data, just clear the receive buffer
       if (!isManaged)
       {
-        mNetwork.read(header, 0, 0);
+        // mNetwork.read(header, 0, 0); .... ????
         Log.noticeln(F("[%s] Received unmanaged data type [%d]"), __func__, header.type);
       }
     }
