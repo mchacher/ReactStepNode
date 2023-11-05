@@ -1,7 +1,8 @@
 #ifndef EVENT_HANDLER_H
 #define EVENT_HANDLER_H
 
-#include "../message_format.h"
+
+#include "rf/react_air_protocol.h"
 #include <RF24Network.h>
 #include "iHandler.h"
 
@@ -14,10 +15,10 @@ namespace communication
     eventHandler(RF24Network network);
     virtual ~eventHandler() = default;
 
-    virtual bool run(MSG_TYPE type, uint8_t *packet, uint8_t size) override;
+    virtual bool run(RFMessageType type, uint8_t *packet, uint8_t size) override;
 
   private:
-    RF24Network mNetwork;
+    RF24Network _network;
   };
 }
 

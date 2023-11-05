@@ -1,8 +1,7 @@
 #ifndef I_DECODER_H
 #define I_DECODER_H
 
-#include "../message_format.h"
-
+#include "rf/react_air_protocol.h"
 namespace communication
 {
 
@@ -12,7 +11,7 @@ namespace communication
     iHandler() = default;
     virtual ~iHandler() = default;
 
-    virtual bool run(MSG_TYPE type, uint8_t *packet, uint8_t size) = 0;
+    virtual bool run(RFMessageType type, uint8_t *packet, uint8_t size) = 0;
   };
 
 }

@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include "foot_sensor.h"
 #include <ArduinoLog.h>
-#include "../reactmagic/event_registry.h"
+#include "react/event_registry.h"
 #include "../hardware_config.h"
 #include "../app_config.h"
 

@@ -11,19 +11,18 @@
 #include "hmi/display.h"
 #include "hmi/foot_sensor.h"
 #include "hmi/led.h"
-#include "reactmagic/event_registry.h"
-#include "reactmagic/react_engine.h"
+#include "react/event_registry.h"
+#include "react/react_engine.h"
 #include "state_machine.h"
 #if DIGITAL_FOOT_SENSOR == 1
 #include "hmi/button.h"
-#include "data_storage.h"
+#include "utils/data_storage.h"
 #endif
 
 #if REACT_MESH == 1
-#include "com/rf.h"
+#include "rf/rf.h"
 #endif
-
-#include "react_scheduler.h"
+#include "utils/react_scheduler.h"
 
 ReactScheduler runner;
 
@@ -31,7 +30,7 @@ ReactScheduler runner;
 
 void rf_task()
 {
-  comm.rf_task();
+  comm.task();
 }
 
 #endif
@@ -157,6 +156,14 @@ void handle_pause_state(EVENT event)
       state_machine_switch_state(RUN);
       Log.noticeln(F("state_machine_task: switching to RUN state" CR));
       task_react_engine.enable();
+      break;
+  case EVENT_SYS_TYPE_STOP:
+      state_machine_switch_state(READY);
+      Log.noticeln(F("state_machine_task: STOP event, switching to READY state" CR));
+      task_react_engine.disable();
+      react_engine_stop();
+      display_message(MSG_STOP);
+      led_set_effect(LED_EFFECTS::EFFECT_RAINBOW);
       break;
   default:
       break;

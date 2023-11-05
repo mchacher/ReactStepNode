@@ -2,21 +2,21 @@
 #include <Arduino.h>
 #include "ArduinoLog.h"
 #include "eventHandler.h"
-#include "../../reactmagic/event_registry.h"
-#include "../../reactmagic/event_type.h"
+#include "react/event_registry.h"
+#include "react/event_type.h"
 
 namespace communication
 {
 
-  eventHandler::eventHandler(RF24Network network) : mNetwork(network)
+  eventHandler::eventHandler(RF24Network network) : _network(network)
   {
   }
 
-  bool eventHandler::run(MSG_TYPE type, uint8_t *packet, uint8_t size)
+  bool eventHandler::run(RFMessageType type, uint8_t *packet, uint8_t size)
   {
     bool isSuccess(false);
 
-    if (MSG_TYPE_EVENT == type)
+    if (RFMessageType::REACT_EVENT == type)
     {
       EVENT event;
       memcpy(&event, packet, sizeof(EVENT));

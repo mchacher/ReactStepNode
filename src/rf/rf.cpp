@@ -5,48 +5,49 @@
 #include "ArduinoLog.h"
 #include "decoder/eventHandler.h"
 #include "decoder/reactCodeHandler.h"
-#include "../reactmagic/event_registry.h"
-#include "../reactmagic/event_type.h"
+#include "react/event_registry.h"
+#include "react/event_type.h"
 #include "../state_machine.h"
+
+
 namespace communication
 {
-  const uint8_t rf::DEFAULT_NODE_ID = 2;
-  bool rf::mIsReady = false;
+  const uint8_t RFNode::DEFAULT_NODE_ID = 2;
+  bool RFNode::_isReady = false;
 
-  rf::rf() : mRadio(PIN_CE, PIN_CSN),
-             mNetwork(mRadio),
-             mMesh(mRadio, mNetwork),
-             mNodeId(DEFAULT_NODE_ID),
-             mCurrentPacketId(0)
+  RFNode::RFNode() : _radio(PIN_CE, PIN_CSN),
+             _network(_radio),
+             _mesh(_radio, _network),
+             _nodeID(DEFAULT_NODE_ID)
   {
-    mHandlerList.push_back(std::make_shared<eventHandler>(mNetwork));
-    mHandlerList.push_back(std::make_shared<reactCodeHandler>(mNetwork));
+    _handlerList.push_back(std::make_shared<eventHandler>(_network));
+    _handlerList.push_back(std::make_shared<reactCodeHandler>(_network));
   } 
 
-  void rf::setup()
+  void RFNode::setup()
   {
-    Log.verboseln(F("[%s] Node ID [%d]"), __func__, mMesh.getNodeID());
+    Log.verboseln(F("[%s] Node ID [%d]"), __func__, _mesh.getNodeID());
     SPI.setRX(PIN_MISO);
     SPI.setTX(PIN_MOSI);
     SPI.setSCK(PIN_SCK);
     SPI.begin();
-    if (!mRadio.begin(&SPI))
+    if (!_radio.begin(&SPI))
     {
       Log.noticeln(F("[%s] radio hardware is not responding!!"), __func__);
       while (1)
         ;
     }
-    mRadio.setPALevel(RF24_PA_MIN, 0);
-    mMesh.setNodeID(mNodeId);
-    if (!mMesh.begin())
+    _radio.setPALevel(RF24_PA_MIN, 0);
+    _mesh.setNodeID(_nodeID);
+    if (!_mesh.begin())
     {
-      if (mRadio.isChipConnected())
+      if (_radio.isChipConnected())
       {
         do
         {
           // mesh.renewAddress() will return MESH_DEFAULT_ADDRESS on failure to connect
           Log.noticeln(F("Could not connect to network.\nConnecting to the mesh..."));
-        } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
+        } while (_mesh.renewAddress() == MESH_DEFAULT_ADDRESS);
       }
       else
       {
@@ -57,26 +58,26 @@ namespace communication
         }
       }
     }
-    mIsReady = true;
-    Log.noticeln(F("[%s] RF communication ready with Node ID: [%i]"), __func__, mMesh.getNodeID());
+    _isReady = true;
+    Log.noticeln(F("[%s] RF communication ready with Node ID: [%i]"), __func__, _mesh.getNodeID());
   }
 
-  void rf::receive()
+  void RFNode::receive()
   {
-    // mMesh.update();
+    // _mesh.update();
     // Check for incoming data from the sensors
-    if (mNetwork.available())
+    if (_network.available())
     {
       RF24NetworkHeader header;
       RF_PACKET packet;
-      uint8_t size = mNetwork.read(header, (uint8_t *)&packet);
+      uint8_t size = _network.read(header, (uint8_t *)&packet);
       Log.noticeln(F("[%s]: message from Node ID [%d], type [%i]"), __func__, header.from_node, header.type);
 
       bool isManaged(false);
 
-      for (const auto &handler : mHandlerList)
+      for (const auto &handler : _handlerList)
       {
-        isManaged = handler->run(static_cast<MSG_TYPE>(header.type), (uint8_t *)&packet, size);
+        isManaged = handler->run(static_cast<RFMessageType>(header.type), (uint8_t *)&packet, size);
         if (isManaged)
         {
           // The first object which can handle this message will finish this transaction
@@ -87,39 +88,39 @@ namespace communication
       // In case of unmanageable data, just clear the receive buffer
       if (!isManaged)
       {
-        // mNetwork.read(header, 0, 0); .... ????
+        // _network.read(header, 0, 0); .... ????
         Log.noticeln(F("[%s] Received unmanaged data type [%d]"), __func__, header.type);
       }
     }
   }
 
-  bool rf::send(uint16_t destNode, uint8_t type, uint8_t *packet, uint8_t size)
+  bool RFNode::send(uint16_t destNode, uint8_t type, uint8_t *packet, uint8_t size)
   {
     bool isSuccess(false);
-    if (mIsReady)
+    if (_isReady)
     {
       // Call mesh.update to keep the network updated
-      mMesh.update();
+      _mesh.update();
 
-      if (!mMesh.write(destNode, packet, type, size))
+      if (!_mesh.write(destNode, packet, type, size))
       {
         // If a write fails, check connectivity to the mesh network
-        if (!mMesh.checkConnection())
+        if (!_mesh.checkConnection())
         {
           // The address could be refreshed per a specified timeframe or only when sequential writes fail, etc.
           do
           {
             Log.noticeln(F("[%s] Renewing Address..."), __func__);
-          } while (mMesh.renewAddress() == MESH_DEFAULT_ADDRESS);
+          } while (_mesh.renewAddress() == MESH_DEFAULT_ADDRESS);
         }
         else
         {
-          Log.noticeln(F("[%s] Failed to to send to node [%d]"), __func__, mNodeId);
+          Log.noticeln(F("[%s] Failed to to send to node [%d]"), __func__, _nodeID);
         }
       }
       else
       {
-        Log.verboseln(F("[%s] Send OK - to node [%d]"), __func__, mNodeId);
+        Log.verboseln(F("[%s] Send OK - to node [%d]"), __func__, _nodeID);
         isSuccess = true;
       }
     }
@@ -130,61 +131,61 @@ namespace communication
     return isSuccess;
   }
 
-  uint16_t rf::getNodeId()
+  uint16_t RFNode::getNodeId()
   {
-    return mNodeId;
+    return _nodeID;
   }
 
-  void rf::incrementNodeId()
+  void RFNode::incrementNodeId()
   {
-    mNodeId = (mNodeId + 1) % (MAX_NODES - 1);
+    _nodeID = (_nodeID + 1) % (MAX_NODES - 1);
 
     // Node ID 0 and 1 are reserved for Master
     // ???  @Adrien: pourquoi 1 est réservé pour le Master ???
     // dans le doute j'ai commenté ton code ci-dessous
-    if (0 == mNodeId)
+    if (0 == _nodeID)
     {
-      mNodeId = 1;
+      _nodeID = 1;
     }
-    // if (1 == mNodeId)
+    // if (1 == _nodeID)
     // {
-    //   mNodeId = 2;
+    //   _nodeID = 2;
     // }
   }
 
-  void rf::setNodeID(uint8_t id)
+  void RFNode::setNodeID(uint8_t id)
   {
-    mNodeId = id;
-    // mMesh.setNodeID(mNodeId);
+    _nodeID = id;
+    // _mesh.setNodeID(_nodeID);
   }
 
-  void rf::releaseAddress()
+  void RFNode::releaseAddress()
   {
-    mMesh.releaseAddress();
+    _mesh.releaseAddress();
   }
 
-  // void rf::buildHeader(PACKET_HEADER& header, MSG_TYPE type, uint8_t data_length)
+  // void RFNode::buildHeader(PACKET_HEADER& header, MSG_TYPE type, uint8_t data_length)
   // {
   //   header.packet_id = generatePacketId();
   //   header.type = type;
   //   header.data_length = data_length;
   // }
 
-  // uint16_t rf::generatePacketId()
+  // uint16_t RFNode::generatePacketId()
   // {
-  //   if (0xFFFF <= mCurrentPacketId + 1)
+  //   if (0xFFFF <= _currentPacketId + 1)
   //   {
-  //     mCurrentPacketId = 0;
+  //     _currentPacketId = 0;
   //   }
-  //   return mCurrentPacketId++;
+  //   return _currentPacketId++;
   // }
 
-  void rf::rf_task()
+  void RFNode::task()
   {
     static uint16_t tick = 0;
     tick += 1;
     // Call mesh.update to keep the network updated
-    mMesh.update();
+    _mesh.update();
     if ((tick % PERIOD_HEARTBEAT) == 0)
     {
       Log.verboseln(F("[%s]: updating mesh network and sending heartbeat"), __func__);

@@ -1,13 +1,13 @@
 #include "button.h"
-#include "../reactmagic/event_queue.h"
-#include "../reactmagic/event_registry.h"
+#include "react/event_queue.h"
+#include "react/event_registry.h"
 #include "ArduinoLog.h"
 #include "hardware_config.h"
 #include "app_config.h"
 #include <JC_Button.h>
 
 #if REACT_MESH == 1
-#include "com/rf.h"
+#include "rf/rf.h"
 #endif
 
 #define LONG_PRESS_TIME 1000 // Long press time threshold in milliseconds (1s)

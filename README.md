@@ -27,7 +27,7 @@ use platform io and clone the repo
 ### Prerequisites
 
 Best is to use the so-called RF Nano board, integrating NRF24L01 on a Arduino Mini Pro board.
-These [ones](https://fr.aliexpress.com/item/1005005472547279.html?spm=a2g0o.order_list.order_list_main.23.2af35e5by6vi0j&gatewayAdapt=glo2fra) in Aliexpress can be used.
+These [ones](https://fr.aliexpress.rf/item/1005005472547279.html?spm=a2g0o.order_list.order_list_main.23.2af35e5by6vi0j&gatewayAdapt=glo2fra) in Aliexpress can be used.
 2 versions are existing one with Original Atmel Atmega328P, another one with Logic Green lgt8f328p, a clone of the Atmega328P having some better performance.
 I would advise to go with Atmega version but still to be decided.
 

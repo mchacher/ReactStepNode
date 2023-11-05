@@ -7,7 +7,7 @@
 #define RF_H
 
 #include "decoder/iHandler.h"
-#include "message_format.h"
+#include "react_air_protocol.h"
 #include <RF24.h>
 #include <RF24Mesh.h>
 #include <RF24Network.h>
@@ -31,18 +31,18 @@ namespace communication
   /**
    * @brief RF communication class.
    */
-  class rf
+  class RFNode
   {
   public:
     /**
      * @brief Constructor for the RF class.
      */
-    rf();
+    RFNode();
 
     /**
      * @brief Destructor for the RF class.
      */
-    virtual ~rf() = default;
+    virtual ~RFNode() = default;
 
     /**
      * @brief Initialize all required objects for communication.
@@ -52,7 +52,7 @@ namespace communication
     /**
      * @brief Task for RF communication.
      */
-    void rf_task();
+    void task();
 
     /**
      * @brief Receive data from RF communication.
@@ -89,21 +89,20 @@ namespace communication
     void releaseAddress();
 
   private:
-    RF24 mRadio;
-    RF24Network mNetwork;
-    RF24Mesh mMesh;
+    RF24 _radio;
+    RF24Network _network;
+    RF24Mesh _mesh;
 
 
-    uint8_t mNodeId;
+    uint8_t _nodeID;
     static const uint8_t DEFAULT_NODE_ID;
-    static bool mIsReady;
-    uint16_t mCurrentPacketId;
-    std::vector<std::shared_ptr<iHandler>> mHandlerList;
+    static bool _isReady;
+    std::vector<std::shared_ptr<iHandler>> _handlerList;
   };
 }
 
 #endif
 
-static communication::rf comm;
+static communication::RFNode comm;
 
 #endif
